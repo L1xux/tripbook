@@ -10,5 +10,8 @@
 8. `backend/app/ai/prompts.py` — 집필 프롬프트 조립 (무드별 시스템/사용자 프롬프트).
 9. `backend/app/ai/parser.py` — LLM 스트림 출력을 페이지 단위로 파싱 (<<<PAGE 마커 기반).
 10. `backend/app/ai/validator.py` — 파싱된 페이지 검증 (사진 매칭/순서/길이).
-11. `backend/app/routers/projects.py` — 프로젝트 생성/조회 API 엔드포인트.
-12. `backend/app/routers/photos.py` — 사진 업로드/수정/정렬 API 엔드포인트.
+11. `backend/app/ai/writer.py` — 집필 작업 실행: Opus 스트림 → 파서 → DB+SSE, 검증 실패 시 재시도.
+12. `backend/app/events.py` — 프로젝트별 SSE 이벤트 버스 (asyncio.Queue 기반 in-memory).
+13. `backend/app/routers/projects.py` — 프로젝트 생성/조회 API 엔드포인트.
+14. `backend/app/routers/photos.py` — 사진 업로드/수정/정렬 API 엔드포인트.
+15. `backend/app/routers/writing.py` — 집필 시작 및 SSE 스트림 라우터.

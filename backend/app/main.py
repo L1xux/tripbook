@@ -11,9 +11,10 @@ def create_app() -> FastAPI:
     )
     init_db()
 
-    from app.routers import projects, photos
+    from app.routers import projects, photos, writing
     app.include_router(projects.router)
     app.include_router(photos.router)
+    app.include_router(writing.router)
 
     @app.get("/api/v1/health")
     def health():
