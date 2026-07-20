@@ -4,6 +4,7 @@ import json
 import anthropic
 import app.db as db_module
 from app.models import Photo
+from app.config import get_settings
 
 ANALYSIS_SCHEMA = {
     "type": "object",
@@ -29,7 +30,7 @@ def _small_path(image_path: str) -> str:
 def analyze_image(image_path: str) -> dict:
     with open(_small_path(image_path), "rb") as f:
         data = base64.standard_b64encode(f.read()).decode()
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=get_settings().anthropic_api_key or None)
     res = client.messages.create(
         model="claude-haiku-4-5",
         max_tokens=1024,
