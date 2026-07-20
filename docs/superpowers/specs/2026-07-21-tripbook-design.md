@@ -139,16 +139,31 @@ OpenAPI 문서(`/docs`) 자동 생성을 그대로 노출한다 (REST API 설계
 - **모듈 docstring** — 모든 주요 모듈 상단에 "이 파일이 하는 일 / 누가 이 파일을 호출하는가 / 이 파일이 호출하는 것" 3줄 요약
 - **왜(why) 주석** — 자명하지 않은 결정 지점에만 이유를 남김 (예: "structured outputs 대신 구분자 포맷을 쓰는 이유: 스트리밍 페이지 파싱")
 - **README의 "AI와 함께 만든 과정" 섹션** — CLAUDE.md 규칙, AI가 틀렸고 사람이 잡은 지점 기록 (채용 어필 겸용)
+- **`docs/SWEETBOOK_API_FEEDBACK.md`** — 연동하며 겪은 문서/API 사용 경험 기록: 헤맨 지점, 개선 제안. 지원서 첨부용 (B2B API 회사에 대한 "고도화 기여 가능" 증거)
 
 각 구현 단계가 끝날 때마다 해당 부분의 문서를 같이 갱신한다 (마지막에 몰아서 쓰지 않는다).
 
 ## 8. Sweetbook 연동
 
 - `sweetbook_client.py` 격리 모듈 — Sweetbook API 호출은 전부 이 모듈 경유
-- `BookRenderer` 인터페이스 뒤에 `TemplateRenderer`(MVP: 공용 템플릿 + 페이지 JSON 바인딩) 구현. PdfRenderer는 인터페이스만 예약
-- 흐름: 퇴고 완료 → 판형/표지 선택 → 책 생성(Books) → 주문(Orders) → 주문번호 저장, 상태는 프록시 조회
+- `BookRenderer` 인터페이스 뒤에 `TemplateRenderer`(MVP: TEMPLATE 창작 방식) 구현. PdfRenderer는 인터페이스만 예약
+- **실제 호출 순서 (문서 확인 완료):**
+
+```
+1. POST /books                      책 생성 (creationType=TEMPLATE)
+2. POST /books/{uid}/cover          표지 템플릿 + 제목/대표사진 바인딩
+3. POST /books/{uid}/contents       페이지마다 반복: 템플릿ID + {사진, 텍스트}
+4. POST /books/{uid}/finalization   최종화 (페이지 수 검증, DRAFT→FINALIZED)
+5. POST /orders                     주문 + 배송지 → 충전금(Credits) 차감
+6. Webhook 수신                     주문 상태 변경(인쇄→배송)을 우리 서버가 받아 DB 반영
+```
+
+- 책 상태 흐름: DRAFT(편집만 가능) → FINALIZED(주문만 가능) → PAID → PDF_READY
+- **주문 상태 추적은 Webhook이 1차** (엔드포인트 `POST /api/v1/webhooks/sweetbook` 수신), 조회 API는 보조/복구용
+- 이미지 전달: 템플릿 바인딩 시 사진 사전 업로드(`POST /books/{uid}/photos`) 또는 URL 방식 중 구현 시 결정
 - `SWEETBOOK_ENV` 환경변수로 Sandbox/Live 전환. API 키는 `.env` (리포에는 `.env.example`만)
-- 실제 템플릿/판형 ID는 파트너 포털에서 확인 후 설정 파일에 기록 (구현 단계 초기에 확인)
+- 실제 템플릿/판형(BookSpecs) ID는 파트너 포털에서 확인 후 설정 파일에 기록 (구현 단계 초기에 확인)
+- 페이지 텍스트 250~400자 제한은 선택한 템플릿의 텍스트 슬롯 제약 확인 후 조정 가능
 
 ## 9. 에러 처리
 
@@ -173,3 +188,4 @@ OpenAPI 문서(`/docs`) 자동 생성을 그대로 노출한다 (REST API 설계
 ## 12. 범위 제외 (YAGNI)
 
 - 회원가입/로그인, 결제, 다국어, PDF 자체 렌더링(인터페이스만), 이미지 생성(사진은 사용자 것), 관리자 화면
+- Book Print API MCP 서버 — 본 서비스 완성 후 시간이 남으면 2차 목표로 검토
