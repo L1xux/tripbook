@@ -11,6 +11,9 @@ def create_app() -> FastAPI:
     )
     init_db()
 
+    from app.routers import projects
+    app.include_router(projects.router)
+
     @app.get("/api/v1/health")
     def health():
         return {"status": "ok"}
