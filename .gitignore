@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+data/
+node_modules/
+frontend/dist/
+.playwright-mcp/
+.superpowers/
+backend/.venv/
