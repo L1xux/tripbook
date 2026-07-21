@@ -7,7 +7,7 @@ from app.sweetbook.client import SweetbookClient
 
 s = get_settings()
 c = SweetbookClient(s.sweetbook_api_key, s.sweetbook_env)
-print("== 책 생성 ==")
-book = c.create_book({"creationType": "TEMPLATE"})
-print(book)
+print("== 책 생성 (SQUAREBOOK_HC) ==")
+book = c.create_book({"creationType": "TEMPLATE", "bookSpecUid": "SQUAREBOOK_HC", "title": "연결 테스트"})
+print(book)  # title 필수 — 없으면 400 ERR_VALIDATION_FAILED (Sandbox 실검증)
 # 이후 단계는 위 응답과 파트너 포털의 템플릿/판형 ID를 보고 대화형으로 확장한다.

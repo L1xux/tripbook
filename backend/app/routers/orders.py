@@ -46,6 +46,22 @@ class OrderBody(BaseModel):
     shipping: dict
 
 
+def _shipping(d: dict) -> dict:
+    """우리 배송 dict(name/address/phone…)를 Sweetbook 주문 shipping 스키마로 매핑.
+    Sandbox 실검증: recipientName/recipientPhone/address1/postalCode가 필수."""
+    return {
+        "recipientName": d.get("name") or d.get("recipientName") or "",
+        "recipientPhone": d.get("phone") or d.get("recipientPhone") or "",
+        "address1": d.get("address") or d.get("address1") or "",
+        "address2": d.get("address2") or "",
+        "postalCode": d.get("postalCode") or d.get("postal_code") or "",
+    }
+
+
+def _order_payload(book_uid: str, shipping: dict) -> dict:
+    return {"items": [{"bookUid": book_uid, "quantity": 1}], "shipping": _shipping(shipping)}
+
+
 @router.post("/projects/{project_id}/order")
 def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
@@ -57,13 +73,12 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
         book_uid = TemplateRenderer(client).render(project, project.photos, body.spec)
         orders = []
         # 나에게 1권
-        me = client.create_order({"bookUid": book_uid, **body.shipping})
+        me = client.create_order(_order_payload(book_uid, body.shipping))
         project.sweetbook_order_id = me.get("orderUid")
         orders.append({"to": body.shipping.get("name", "나"), "order_uid": me.get("orderUid")})
         # 수령인마다 1권
         for r in project.recipients:
-            o = client.create_order({"bookUid": book_uid, "name": r.name, "address": r.address,
-                                     "phone": r.phone, "giftMessage": r.gift_message})
+            o = client.create_order(_order_payload(book_uid, {"name": r.name, "address": r.address, "phone": r.phone}))
             r.sweetbook_order_id = o.get("orderUid"); r.order_status = "ORDERED"
             orders.append({"to": r.name, "order_uid": o.get("orderUid")})
     except SweetbookError:

@@ -5,8 +5,8 @@ import { useState } from "react";
 import { addRecipient, createOrder, type Project } from "../api";
 
 const PRICE = 24000;
-// TODO: Sweetbook Sandbox/포털에서 확정한 값으로 교체
-const BOOK_SPEC = { bookSpecUid: "REPLACE_ME", coverTemplateUid: "REPLACE_ME", contentTemplateUid: "REPLACE_ME" };
+// Sweetbook Sandbox 확정값: 스퀘어 하드커버(SQUAREBOOK_HC) + 표지 "일기장A"(taupe/명조, 우리 디자인과 일치) + 공용 빈내지
+const BOOK_SPEC = { bookSpecUid: "SQUAREBOOK_HC", coverTemplateUid: "79yjMH3qRPly", contentTemplateUid: "2mi1ao0Z4Vxl" };
 
 export default function OrderSheet({ project }: { project: Project }) {
   const [name, setName] = useState("");

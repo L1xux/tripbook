@@ -28,7 +28,7 @@
 ## Sweetbook 연동
 
 14. `backend/app/sweetbook/client.py` — Book Print API HTTP 클라이언트. **여기서 볼 것:** `{success, data, errors}` 언랩, transport 주입(테스트 모킹).
-15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** `build_content_payload`가 순간 1개(사진+캡션)를 페이지 1개로 매핑, payload 조립을 `build_*_payload`로 분리해 스키마 변경을 국소화.
+15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** 순간 1개=내지 1페이지(`?breakBefore=page`로 누적), 인쇄용 원본 이미지를 multipart로 첨부, 판형 최소 페이지(24p) 미달 시 여백 패딩. Sandbox 실검증 결과는 `docs/SWEETBOOK_API_FEEDBACK.md`.
 
 ## 프론트엔드 (v2 — 음성 캡션 포토북 UI)
 

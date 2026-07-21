@@ -34,7 +34,8 @@ def main(order: bool):
     if order:
         c.post(f"{BASE}/projects/{pid}/recipients", json={"name": "엄마", "address": "서울"})
         res = c.post(f"{BASE}/projects/{pid}/order", json={
-            "spec": {"bookSpecUid": "REPLACE_ME"},
+            "spec": {"bookSpecUid": "SQUAREBOOK_HC",
+                     "coverTemplateUid": "79yjMH3qRPly", "contentTemplateUid": "2mi1ao0Z4Vxl"},
             "shipping": {"name": "나", "phone": "010-0000-0000", "address": "부산"}})
         print("order:", res.json())
     print("완료:", f"http://localhost:5173/ (프로젝트 {pid})")
