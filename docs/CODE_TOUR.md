@@ -14,7 +14,7 @@
 ## API 라우터 (요청 진입점)
 
 6. `backend/app/routers/projects.py` — 프로젝트 생성/조회. **여기서 볼 것:** `get_project_or_404`(다른 라우터가 공용으로 씀).
-7. `backend/app/routers/photos.py` — 사진 업로드/음성 업로드/수정/정렬. **여기서 볼 것:** 원본+리사이즈 저장 후 `analysis.analyze_batch` 백그라운드 실행, `upload_audio`가 `caption.transcribe_and_caption`을 백그라운드로 건다.
+7. `backend/app/routers/photos.py` — 사진 업로드/음성 업로드/수정/정렬 + 오디오 서빙/공개 순간 조회. **여기서 볼 것:** 원본+리사이즈 저장 후 `analysis.analyze_batch` 백그라운드 실행, `upload_audio`가 `caption.transcribe_and_caption`을 백그라운드로 건다. `moment_audio`(바이트 스니핑으로 content-type), `get_moment`(공개 재생 페이지용, 인증 없음).
 8. `backend/app/routers/orders.py` — 수령인 등록/주문 생성/상태/웹훅. **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `create_order`를 반복 호출, `SweetbookError` → 502 매핑.
 
 ## AI 파이프라인
@@ -28,7 +28,7 @@
 ## Sweetbook 연동
 
 14. `backend/app/sweetbook/client.py` — Book Print API HTTP 클라이언트. **여기서 볼 것:** `{success, data, errors}` 언랩, transport 주입(테스트 모킹).
-15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** 순간 1개=내지 1페이지(`?breakBefore=page`로 누적), 인쇄용 원본 이미지를 multipart로 첨부, 판형 최소 페이지(24p) 미달 시 여백 패딩. Sandbox 실검증 결과는 `docs/SWEETBOOK_API_FEEDBACK.md`.
+15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** 순간 1개=내지 1페이지(`?breakBefore=page`로 누적), 인쇄용 원본 이미지를 multipart로 첨부, 판형 최소 페이지(24p) 미달 시 여백 패딩. `compose_page_image`가 오디오 있는 순간에 사진 아래 종이색 밴드+QR(→`/v/:id`)을 합성(시그니처). Sandbox 실검증은 `docs/SWEETBOOK_API_FEEDBACK.md`.
 
 ## 프론트엔드 (v2 — 음성 캡션 포토북 UI)
 
@@ -36,14 +36,15 @@
 > 화면 흐름: 서재(홈) → 카드 덱 ⇄ 그리드 → 순간(글귀+음성 파형) → 책 펼침면 → 주문·선물.
 > 비주얼은 확정 목업 `.superpowers/brainstorm/*/content/design-v1.html`(필름/Retro)을 단일 기준으로 옮긴 것.
 
-16. `frontend/src/api.ts` — 백엔드 v2 API 클라이언트. **여기서 볼 것:** 모든 컴포넌트는 이 파일로만 서버와 통신, 타입 `Moment/Recipient/Project`, 에러 detail을 사용자 메시지로 변환.
+16. `frontend/src/api.ts` — 백엔드 v2 API 클라이언트. **여기서 볼 것:** 모든 컴포넌트는 이 파일로만 서버와 통신, 타입 `Moment/Recipient/Project/PublicMoment`, `audioUrl`·`getMoment`(공개 재생), 에러 detail을 사용자 메시지로 변환.
 17. `frontend/src/lib/library.ts` — 계정 없는 "내 서재". **여기서 볼 것:** localStorage에 여행 id 목록만 보관(`listTrips/addTrip/removeTrip`).
 18. `frontend/src/App.tsx` — 라우터: `/`(서재) · `/new`(새 여행) · `/p/:id`(앨범). **여기서 볼 것:** 앨범 내부(덱/그리드/책/주문)는 라우트가 아니라 Album의 state로 전환.
 19. `frontend/src/screens/Library.tsx` — 홈 서재(책장 진열). **여기서 볼 것:** 없어진 여행 id를 서재에서 청소하는 로직.
 20. `frontend/src/screens/NewTrip.tsx` — 새 여행 + 순간 담기(사진 + 목소리 녹음 + 감정). **여기서 볼 것:** 캡션 폴링은 audio를 올린 순간에만 걸고 done/failed에서 종료(pending 고착 순간 무한로딩 금지).
 21. `frontend/src/screens/Album.tsx` — 앨범: 카드 덱 ⇄ 그리드 ⇄ 책 ⇄ 주문. **여기서 볼 것:** `view` state 하나로 4개 화면 전환, 덱 끝의 "책으로 만들기" 엔드카드.
 22. `frontend/src/components/Recorder.tsx` — 목소리 녹음 버튼(MediaRecorder). **여기서 볼 것:** 정지 시 Blob을 onRecorded로 넘기고 스트림 트랙 정리.
-23. `frontend/src/components/MomentCard.tsx` — 순간 카드(탭→글귀 시트). **여기서 볼 것:** 캡션 없으면 transcript로 폴백, 시그니처(글귀+파형+스탬프).
-24. `frontend/src/components/Waveform.tsx` — 앰버 음성 파형. **여기서 볼 것:** 오디오 분석 없이 순간 index 시드로 결정적 막대 생성.
+23. `frontend/src/components/MomentCard.tsx` — 순간 카드(탭→글귀 시트). **여기서 볼 것:** 캡션 없으면 transcript로 폴백, 시그니처(글귀+**실제 음성 파형+재생**+스탬프).
+24. `frontend/src/components/AudioWaveform.tsx` — **진짜** 음성 파형+재생. **여기서 볼 것:** 오디오를 Web Audio(`decodeAudioData`)로 디코드해 실제 진폭 막대, 탭 재생/진행, 실패 시 정적 막대 폴백.
+25. `frontend/src/screens/Voice.tsx` — 공개 재생 페이지 `/v/:id`(인쇄 QR 목적지). **여기서 볼 것:** `getMoment`로 사진+명조 글귀+파형, 없는 순간엔 "이 순간은 더 이상 없어요".
 25. `frontend/src/components/BookPreview.tsx` — 책 펼침면 미리보기(사진|명조 캡션). **여기서 볼 것:** "이대로 인쇄된다"는 신뢰를 주는 spread 레이아웃.
 26. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 동행자 선물 토글 시 합계 2배, `BOOK_SPEC`의 `REPLACE_ME`(Sweetbook Sandbox 값으로 교체 필요).
