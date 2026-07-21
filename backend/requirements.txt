@@ -8,3 +8,4 @@ pillow>=10.0
 python-multipart>=0.0.9
 pytest>=8.0
 openai>=1.0
+qrcode>=7.4
