@@ -50,5 +50,6 @@
 26. `frontend/src/components/BookPreview.tsx` — 책 펼침면 미리보기(사진|명조 캡션). **여기서 볼 것:** "이대로 인쇄된다"는 신뢰를 주는 spread 레이아웃.
 27. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 연락처·우편번호 입력, 동행자 선물 토글 시 합계 2배, `BOOK_SPEC`(SQUAREBOOK_HC + 일기장A + 빈내지, Sandbox 확정값), 완료 후 `onViewStatus`.
 28. `frontend/src/components/OrderStatus.tsx` — 주문 현황(내 책+수령인별 인쇄/배송 상태). **여기서 볼 것:** `getOrderStatus` 폴링(웹훅으로 갱신), 상태 문자열 한국어 매핑.
-29. `frontend/src/components/MomentCapture.tsx` — 순간 담기 공용(사진+녹음+감정+✨AI추천). **여기서 볼 것:** NewTrip·AddMoments가 공유, 감정 제안 폴링.
+29. `frontend/src/components/MomentCapture.tsx` — 순간 담기 공용(카메라/갤러리 사진 + 녹음 + 감정 + ✨AI추천). **여기서 볼 것:** NewTrip·AddMoments가 공유, `Camera`(즉석 촬영)·`Recorder` 사용, 감정 제안 폴링.
+29b. `frontend/src/components/Camera.tsx` — 여행 중 즉석 카메라 촬영(getUserMedia 라이브→셔터→캔버스 JPEG). **여기서 볼 것:** 후면 카메라(facingMode) 요청, 언마운트 시 트랙 정리, 권한 실패 시 안내.
 30. `frontend/src/screens/AddMoments.tsx` — 여행 중 순간 추가(`/p/:id/add`). **여기서 볼 것:** 기존 순간을 불러와 이어서 담기.

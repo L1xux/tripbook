@@ -59,6 +59,15 @@ input:focus{ outline:none; border-color:var(--stamp); }
   font:600 13px/1 var(--sans); padding:10px 16px; cursor:pointer; }
 .rec.on{ border-color:var(--stamp); background:var(--stamp-soft); color:var(--stamp); }
 
+/* 카메라 촬영 오버레이 */
+.camera{ position:fixed; inset:0; z-index:50; background:#000; display:flex; flex-direction:column; }
+.camera-view{ flex:1; width:100%; min-height:0; object-fit:cover; }
+.camera-err{ flex:1; display:flex; align-items:center; justify-content:center; color:#fff; padding:24px; text-align:center; word-break:keep-all; }
+.camera-bar{ display:flex; align-items:center; justify-content:space-between; padding:18px 24px 32px; background:#000; }
+.camera-bar .btn-ghost{ color:#fff; border-color:rgba(255,255,255,.4); }
+.shutter{ width:66px; height:66px; border-radius:999px; background:#fff; border:4px solid rgba(255,255,255,.5); cursor:pointer; padding:0; }
+.shutter:active{ transform:scale(.94); }
+
 /* 감정 칩 */
 .emotions{ display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 2px; }
 .emotion{ border:1.5px solid var(--line); border-radius:999px; background:var(--card);

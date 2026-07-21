@@ -4,12 +4,14 @@
 import { useRef, useState } from "react";
 import { uploadPhotos, uploadAudio, patchMoment, getAnalysis, photoImageUrl, type Moment } from "../api";
 import Recorder from "./Recorder";
+import Camera from "./Camera";
 
 const EMOTIONS = ["설렘", "행복", "평온", "뭉클", "신남", "아쉬움"];
 
 export default function MomentCapture({ projectId, initialMoments }: { projectId: string; initialMoments: Moment[] }) {
   const [moments, setMoments] = useState<Moment[]>(initialMoments);
   const [error, setError] = useState("");
+  const [camOpen, setCamOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // 사진 업로드 후 Haiku 비전이 감정 후보(suggested_emotion)를 채우면 화면에 반영한다(짧게 폴링)
@@ -27,14 +29,15 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
     }, 2500);
   };
 
-  const onFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
+  const addFiles = async (files: File[]) => {
+    if (!files.length) return;
     try {
-      const { photos } = await uploadPhotos(projectId, [...files]);
+      const { photos } = await uploadPhotos(projectId, files);
       setMoments((cur) => [...cur, ...photos]);
       pollSuggestions(photos.map((p) => p.id));
     } catch (e) { setError(e instanceof Error ? e.message : "사진을 올리지 못했어요"); }
   };
+  const onFiles = (files: FileList | null) => { if (files?.length) void addFiles([...files]); };
 
   const onAudio = async (m: Moment, blob: Blob) => {
     await uploadAudio(m.id, blob);
@@ -58,7 +61,11 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
-      <button className="btn-ghost" style={{ margin: "18px 0" }} onClick={() => fileRef.current?.click()}>＋ 사진 담기</button>
+      <div style={{ display: "flex", gap: 8, margin: "18px 0" }}>
+        <button className="btn" style={{ flex: 1, padding: "13px" }} onClick={() => setCamOpen(true)}>📷 카메라로 찍기</button>
+        <button className="btn-ghost" onClick={() => fileRef.current?.click()}>＋ 갤러리</button>
+      </div>
+      {camOpen && <Camera onCapture={(f) => void addFiles([f])} onClose={() => setCamOpen(false)} />}
 
       {moments.map((m) => (
         <div key={m.id} className="capture-card">
