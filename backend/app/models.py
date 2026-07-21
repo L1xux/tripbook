@@ -18,6 +18,7 @@ class Project(Base):
     end_date: Mapped[str | None] = mapped_column(String, nullable=True)
     companions: Mapped[str | None] = mapped_column(String, nullable=True)
     cover_line: Mapped[str | None] = mapped_column(String, nullable=True)  # 표지 문구
+    emotion_arc: Mapped[str | None] = mapped_column(Text, nullable=True)  # AI 여행 감정 요약(사용자 캡션 기반)
     reveal_mode: Mapped[str] = mapped_column(String, default="slide")  # slide | dim (설계 3.5 A/B)
     status: Mapped[str] = mapped_column(String, default="draft")  # draft | ordered
     sweetbook_book_id: Mapped[str | None] = mapped_column(String, nullable=True)

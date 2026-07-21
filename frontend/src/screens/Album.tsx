@@ -3,7 +3,7 @@
  *  무엇을 호출: api(getProject/photoImageUrl), components/MomentCard. */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getProject, photoImageUrl, type Project } from "../api";
+import { getProject, generateArc, photoImageUrl, type Project } from "../api";
 import MomentCard from "../components/MomentCard";
 import BookPreview from "../components/BookPreview";
 import OrderSheet from "../components/OrderSheet";
@@ -14,8 +14,15 @@ export default function Album() {
   const [p, setP] = useState<Project | null>(null);
   const [idx, setIdx] = useState(0);
   const [view, setView] = useState<"deck" | "grid" | "book" | "order">("deck");
+  const [arcBusy, setArcBusy] = useState(false);
 
   useEffect(() => { getProject(id).then(setP); }, [id]);
+
+  const makeArc = async () => {
+    setArcBusy(true);
+    try { const r = await generateArc(id); setP((prev) => prev ? { ...prev, emotion_arc: r.arc } : prev); }
+    finally { setArcBusy(false); }
+  };
   if (!p) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
 
   const M = p.photos;
@@ -62,8 +69,13 @@ export default function Album() {
           <div className="endcard">
             <div className="kick">{(p.title || "").toUpperCase()}</div>
             <h3>{M.length}개의 순간</h3>
-            <p>여기까지가 이 여행이에요. 이대로 한 권의 책이 되면, 언제든 다시 펼쳐볼 수 있어요.</p>
+            {p.emotion_arc
+              ? <p className="arc">“{p.emotion_arc}”</p>
+              : <p>여기까지가 이 여행이에요. 이대로 한 권의 책이 되면, 언제든 다시 펼쳐볼 수 있어요.</p>}
             <button className="btn" onClick={() => setView("book")}>책으로 만들기</button>
+            {!p.emotion_arc && M.length > 0 && (
+              <button className="btn-ghost" onClick={makeArc} disabled={arcBusy}>{arcBusy ? "요약하는 중…" : "✨ 이 여행 감정 요약"}</button>
+            )}
             <button className="btn-ghost" onClick={() => setIdx(M.length - 1)}>← 순간 더 보기</button>
           </div>
         ) : (
