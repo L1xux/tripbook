@@ -1,4 +1,5 @@
 """주문 생성/상태/웹훅 라우터. / main.py가 등록. / sweetbook 모듈 호출."""
+from functools import lru_cache
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from app.sweetbook.renderer import TemplateRenderer
 router = APIRouter(prefix="/api/v1", tags=["orders"])
 
 
+# 왜 캐시하는가: 렌더링은 3+N번의 순차 HTTP 호출 — 요청마다 새 클라이언트를 만들면 커넥션 풀이 버려진다
+@lru_cache
 def get_sweetbook_client() -> SweetbookClient:
     s = get_settings()
     return SweetbookClient(s.sweetbook_api_key, s.sweetbook_env)

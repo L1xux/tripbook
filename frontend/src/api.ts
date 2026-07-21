@@ -6,13 +6,22 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     headers: init?.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
     ...init,
   });
-  if (!res.ok) throw new Error(`${res.status}: ${await res.text?.() ?? ""}`);
+  if (!res.ok) {
+    // 백엔드가 detail에 담아주는 한국어 메시지를 그대로 사용자에게 보여준다
+    let msg = `요청 실패 (${res.status})`;
+    try {
+      const body = await res.json();
+      if (typeof body.detail === "string") msg = body.detail;
+    } catch { /* JSON이 아니면 상태코드 메시지 유지 */ }
+    throw new Error(msg);
+  }
   return res.json();
 }
 
 export type Mood = "family_essay" | "friendship_saga" | "fantasy_adventure" | "lyrical_essay" | "comedy";
 export interface Photo { id: string; sort_order: number; emotion: string | null; note: string | null;
-  ai_scene_description: string | null; analysis_status: string; user_scene_correction: string | null; }
+  ai_scene_description: string | null; analysis_status: string; user_scene_correction: string | null;
+  scene: string | null; }
 export interface Page { id: string; page_number: number; photo_id: string | null; text: string; regen_count: number; }
 export interface Project { id: string; title: string; mood: string; status: string;
   order_status: string | null; photos: Photo[]; pages: Page[]; }
@@ -26,7 +35,7 @@ export const uploadPhotos = (id: string, files: File[]) => {
   return req<{ photos: Photo[] }>(`/api/v1/projects/${id}/photos`, { method: "POST", body: fd });
 };
 export const getAnalysis = (id: string) =>
-  req<{ photos: { id: string; analysis_status: string; ai_scene_description: string | null }[] }>(
+  req<{ photos: { id: string; analysis_status: string; scene: string | null }[] }>(
     `/api/v1/projects/${id}/photos/analysis`);
 export const patchPhoto = (photoId: string, b: Partial<Pick<Photo, "note" | "emotion" | "user_scene_correction">>) =>
   req(`/api/v1/photos/${photoId}`, { method: "PATCH", body: JSON.stringify(b) });

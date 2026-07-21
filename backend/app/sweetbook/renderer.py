@@ -25,7 +25,10 @@ class TemplateRenderer:
         self.client = client
 
     def render(self, project, pages, spec: dict) -> str:
-        book = self.client.create_book({"creationType": "TEMPLATE", **{k: v for k, v in spec.items() if k == "bookSpecUid"}})
+        create = {"creationType": "TEMPLATE"}
+        if "bookSpecUid" in spec:
+            create["bookSpecUid"] = spec["bookSpecUid"]
+        book = self.client.create_book(create)
         book_uid = book["bookUid"]
         self.client.set_cover(book_uid, build_cover_payload(project, spec))
         for page in pages:

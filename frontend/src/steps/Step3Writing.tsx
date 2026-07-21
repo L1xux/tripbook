@@ -16,27 +16,30 @@ export default function Step3Writing() {
   const [errMsg, setErrMsg] = useState("");
 
   useEffect(() => {
-    // 새로고침 대비: 이미 저장된 페이지 먼저 로드
+    let es: EventSource | null = null;
+    // 새로고침 대비: 이미 저장된 페이지 먼저 로드하고, 끝난 집필이면 스트림을 열지 않는다
     getProject(id).then((p) => {
       setPages(p.pages);
-      if (p.status === "ready") setState("done");
+      if (p.status === "ready") { setState("done"); return; }
+      es = new EventSource(writeStreamUrl(id));
+      es.onmessage = (e) => {
+        const ev: FeedEvent = JSON.parse(e.data);
+        if (ev.type === "page") {
+          setPages((cur) => [...cur.filter((p) => p.id !== ev.id),
+            { id: ev.id, page_number: ev.page_number, photo_id: ev.photo_id, text: ev.text, regen_count: 0 }]);
+        } else if (ev.type === "done") { setState("done"); es?.close(); }
+        else { setState("error"); setErrMsg(ev.message); es?.close(); }
+      };
     });
-    const es = new EventSource(writeStreamUrl(id));
-    es.onmessage = (e) => {
-      const ev: FeedEvent = JSON.parse(e.data);
-      if (ev.type === "page") {
-        setPages((cur) => [...cur.filter((p) => p.id !== ev.id),
-          { id: ev.id, page_number: ev.page_number, photo_id: ev.photo_id, text: ev.text, regen_count: 0 }]);
-      } else if (ev.type === "done") { setState("done"); es.close(); }
-      else { setState("error"); setErrMsg(ev.message); es.close(); }
-    };
-    return () => es.close();
+    return () => es?.close();
   }, [id]);
+
+  const ordered = [...pages].sort((a, b) => a.page_number - b.page_number); // state를 변이하지 않게 복사 후 정렬
 
   return (
     <div>
       <h2>여행기가 써지고 있어요</h2>
-      {pages.sort((a, b) => a.page_number - b.page_number).map((p) => (
+      {ordered.map((p) => (
         <div key={p.id} className="card">
           <span style={{ fontSize: 12, color: "#6b6558" }}>
             {p.page_number}p {p.photo_id ? "📷" : "✒️"}

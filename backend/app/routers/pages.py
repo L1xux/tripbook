@@ -1,8 +1,8 @@
 """페이지 수정/재생성 라우터. / main.py가 등록. / ai.regen 호출."""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from app.db import get_db
+from app.db import get_db, get_or_404
 from app.models import Page, Project
 from app.ai.regen import regenerate_page_text
 
@@ -18,10 +18,7 @@ class FeedbackBody(BaseModel):
 
 
 def _get_page(db: Session, page_id: str) -> Page:
-    page = db.get(Page, page_id)
-    if not page:
-        raise HTTPException(404, "page not found")
-    return page
+    return get_or_404(db, Page, page_id, "page")
 
 
 @router.patch("/pages/{page_id}")

@@ -39,6 +39,16 @@ class Photo(Base):
     analysis_status: Mapped[str] = mapped_column(String, default="pending")
     user_scene_correction: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    @property
+    def scene(self) -> str | None:
+        """UI/프롬프트에 쓰는 장면 1문장. 사용자 교정이 있으면 그것이 우선.
+        (ai_scene_description 컬럼은 '1문장\\n전체JSON' 포맷 — 해석은 여기 한 곳에서만 한다)"""
+        if self.user_scene_correction:
+            return self.user_scene_correction
+        if self.ai_scene_description:
+            return self.ai_scene_description.split("\n")[0]
+        return None
+
 
 class Page(Base):
     __tablename__ = "pages"

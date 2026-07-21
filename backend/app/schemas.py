@@ -21,6 +21,7 @@ class PhotoOut(BaseModel):
     ai_scene_description: str | None
     analysis_status: str
     user_scene_correction: str | None
+    scene: str | None = None  # models.Photo.scene 프로퍼티 — UI가 문자열 파싱하지 않게 서버가 준다
     model_config = {"from_attributes": True}
 
 

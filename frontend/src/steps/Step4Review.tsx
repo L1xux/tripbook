@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProject, patchPage, regeneratePage, type Page } from "../api";
+import { patchById } from "../utils";
 
 export default function Step4Review() {
   const { id = "" } = useParams();
@@ -13,7 +14,7 @@ export default function Step4Review() {
 
   const save = async (pageId: string, text: string) => {
     await patchPage(pageId, text);
-    setPages((cur) => cur.map((p) => (p.id === pageId ? { ...p, text } : p)));
+    setPages((cur) => patchById(cur, pageId, { text }));
   };
 
   const regen = async (pageId: string) => {
@@ -22,7 +23,7 @@ export default function Step4Review() {
     setBusyId(pageId);
     try {
       const res = await regeneratePage(pageId, feedback);
-      setPages((cur) => cur.map((p) => (p.id === pageId ? { ...p, text: res.text, regen_count: res.regen_count } : p)));
+      setPages((cur) => patchById(cur, pageId, { text: res.text, regen_count: res.regen_count }));
     } finally { setBusyId(null); }
   };
 

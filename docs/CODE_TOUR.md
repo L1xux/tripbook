@@ -21,7 +21,8 @@
 
 ## AI 파이프라인
 
-11. `backend/app/ai/prompts.py` — 집필 프롬프트 조립(무드 5종). **여기서 볼 것:** `FORMAT_RULES`의 `<<<PAGE>>>` 규격.
+11. `backend/app/ai/llm.py` — Anthropic 클라이언트 팩토리+모델 상수. **여기서 볼 것:** lru_cache로 커넥션 풀 재사용, analysis/writer/regen이 공유.
+12. `backend/app/ai/prompts.py` — 집필 프롬프트 조립(무드 5종). **여기서 볼 것:** `FORMAT_RULES`의 `<<<PAGE>>>` 규격.
 12. `backend/app/ai/parser.py` — 스트림 출력을 페이지 단위로 파싱. **여기서 볼 것:** 청크 경계를 넘는 마커 처리, 첫 마커 이전 잡담 폐기.
 13. `backend/app/ai/validator.py` — 파싱된 페이지 검증(사진 매칭/순서/길이). **여기서 볼 것:** 250~400자, 사진당 정확히 1페이지 규칙.
 14. `backend/app/ai/writer.py` — 집필 잡: Opus 스트림→파서→DB+SSE, 검증 실패 시 1회 재시도. **여기서 볼 것:** 재시도 전 오류를 프롬프트에 되먹이는 부분.
@@ -37,8 +38,9 @@
 
 ## 프론트엔드 (모바일 퍼스트 위자드)
 
-21. `frontend/src/api.ts` — 백엔드 API 클라이언트. **여기서 볼 것:** 모든 컴포넌트는 이 파일로만 서버와 통신.
-22. `frontend/src/App.tsx` — 라우터 + 위자드 5단계 연결.
+21. `frontend/src/api.ts` — 백엔드 API 클라이언트. **여기서 볼 것:** 모든 컴포넌트는 이 파일로만 서버와 통신, 에러 detail을 사용자 메시지로 변환.
+22. `frontend/src/utils.ts` — 공용 유틸(patchById). **여기서 볼 것:** Step2/Step4의 리스트 패치가 이 하나를 공유.
+23. `frontend/src/App.tsx` — 라우터 + 위자드 5단계 연결.
 23. `frontend/src/steps/Step1Info.tsx` — 여행 정보 + 무드 선택.
 24. `frontend/src/steps/Step2Photos.tsx` — 사진 업로드 + 메모 + AI 장면 교정 + 순서 조정(분석 폴링).
 25. `frontend/src/steps/Step3Writing.tsx` — 실시간 집필 피드(EventSource SSE).

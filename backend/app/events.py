@@ -13,6 +13,8 @@ class EventBus:
 
     def unsubscribe(self, project_id: str, q: asyncio.Queue):
         self._subs[project_id].remove(q)
+        if not self._subs[project_id]:  # 빈 리스트가 프로젝트 수만큼 누적되지 않게 정리
+            del self._subs[project_id]
 
     def publish(self, project_id: str, event: dict):
         for q in self._subs.get(project_id, []):

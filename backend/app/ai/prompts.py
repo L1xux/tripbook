@@ -6,7 +6,7 @@ MOOD_STYLES = {
     "friendship_saga": "유쾌한 우정 무용담. 친구들끼리 두고두고 놀릴 수 있는 유머. '아쉬움' 같은 감정도 웃음 포인트로 전환.",
     "fantasy_adventure": "판타지 모험기. 여행자를 모험의 주인공으로, 장소를 왕국과 관문으로 각색하되 메모의 사실은 왜곡하지 말고 은유의 옷만 입힐 것.",
     "lyrical_essay": "서정적 여행 에세이. 감각 묘사 중심의 차분한 문체. 풍경과 감정을 겹쳐 쓸 것.",
-    "comedy": "유쾌한 코미디. 상황의 어이없음과 반전을 살리는 경쾌한 문체. 자學개그 환영, 비하는 금지.",
+    "comedy": "유쾌한 코미디. 상황의 어이없음과 반전을 살리는 경쾌한 문체. 자학개그 환영, 비하는 금지.",
 }
 
 FORMAT_RULES = """출력 형식 (반드시 준수):
@@ -34,9 +34,8 @@ def build_user_prompt(project, photos) -> str:
         "", "사진 목록 (이 순서대로 각 1페이지):",
     ]
     for p in photos:
-        scene = p.user_scene_correction or (p.ai_scene_description or "").split("\n")[0] or "분석 없음"
         lines.append(json.dumps({
-            "사진ID": p.id, "장면": scene, "감정": p.emotion or "", "메모": p.note or ""
+            "사진ID": p.id, "장면": p.scene or "분석 없음", "감정": p.emotion or "", "메모": p.note or ""
         }, ensure_ascii=False))
     lines.append("\n프롤로그로 시작해 에필로그로 끝나는 하나의 여행기를 써라.")
     return "\n".join(lines)

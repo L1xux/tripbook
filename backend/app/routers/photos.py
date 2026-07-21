@@ -1,10 +1,10 @@
 """사진 업로드/수정/정렬 라우터. / main.py가 등록. / imaging, ai.analysis 호출."""
 from pathlib import Path
-from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.config import get_settings
-from app.db import get_db
+from app.db import get_db, get_or_404
 from app.models import Photo
 from app.imaging import save_resized
 from app.routers.projects import get_project_or_404
@@ -52,8 +52,8 @@ def upload_photos(
         for i, p in enumerate(sorted(created, key=lambda p: p.taken_at)):
             p.sort_order = i
     db.commit()
-    for p in created:
-        background.add_task(analysis.analyze_and_save, p.id)
+    # 왜 배치 하나로 거는가: BackgroundTasks는 순차 실행이라 장당 태스크는 비전 호출을 직렬화한다
+    background.add_task(analysis.analyze_batch, [p.id for p in created])
     ordered = sorted(created, key=lambda p: p.sort_order)
     return {"photos": [PhotoOut.model_validate(p).model_dump() for p in ordered]}
 
@@ -62,16 +62,14 @@ def upload_photos(
 def analysis_status(project_id: str, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
     return {"photos": [
-        {"id": p.id, "analysis_status": p.analysis_status, "ai_scene_description": p.ai_scene_description}
+        {"id": p.id, "analysis_status": p.analysis_status, "scene": p.scene}
         for p in project.photos
     ]}
 
 
 @router.patch("/photos/{photo_id}")
 def patch_photo(photo_id: str, body: PhotoPatch, db: Session = Depends(get_db)):
-    photo = db.get(Photo, photo_id)
-    if not photo:
-        raise HTTPException(404, "photo not found")
+    photo = get_or_404(db, Photo, photo_id, "photo")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(photo, k, v)
     db.commit()
