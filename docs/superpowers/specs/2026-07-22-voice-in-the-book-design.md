@@ -26,11 +26,13 @@
 - **공개 순간 조회** `GET /api/v1/moments/{id}`
   - 반환: `{id, caption, transcript, emotion, project_title, image_url, audio_url, has_audio}`. 인증/localStorage 없음.
   - QR 목적지 페이지가 소비. 없는 id → 404(프론트가 친절 문구 처리).
-- **인쇄 QR 합성** (renderer)
-  - 순간마다 `PUBLIC_WEB_BASE + /v/{id}` 를 QR로 생성(`qrcode`), 내지용 사진 이미지 하단 코너에 합성(Pillow):
-    흰색 quiet-zone 칩 + QR + 작은 라벨("🔊 그때 목소리"는 텍스트가 아니라 아이콘/여백로 절제). QR 변당 ~인쇄 2cm 이상 되게 픽셀 크기 산정.
-  - Sweetbook 템플릿 변경 불필요 — 우리가 업로드하는 `photo` 이미지에 합성해서 보낸다.
-  - 오디오 없는 순간은 QR 생략(글귀만).
+- **인쇄 QR 합성** (renderer) — **위치: 사진 위 아님, 여백 밴드(2-b 결정)**
+  - 사진 원본은 손대지 않는다. 내지용 이미지 = 원본 사진 + **하단에 종이색(`#F7F4EE`) 여백 밴드**를 덧댄 캔버스.
+    그 밴드에 `PUBLIC_WEB_BASE + /v/{id}` QR(`qrcode`) + 작은 필름 라벨을 절제되게 배치(Pillow).
+  - QR은 quiet-zone(흰 여백) 확보, 인쇄 시 스캔 가능 최소 크기(≈2cm+) 되도록 밴드 높이·QR 픽셀 산정.
+  - Sweetbook 템플릿 변경 불필요 — 우리가 업로드하는 `photo` 이미지 자체를 "사진+QR밴드"로 만들어 보낸다.
+    (템플릿이 별도 QR/이미지 슬롯을 지원하면 그걸 우선 — 오픈 아이템에서 Sandbox로 확인.)
+  - 오디오 없는 순간은 밴드/QR 생략(원본 사진 그대로).
 - **STT 튜닝** `stt.py`
   - `transcriptions.create(model="whisper-1", file=f, language="ko", prompt="여행 중 남긴 짧은 한국어 음성 메모")`.
   - 모델 상수는 CLAUDE.md 제약(`whisper-1`) 유지.
@@ -81,7 +83,7 @@
 - `ANTHROPIC_API_KEY`(캡션 실작동) — 사용자 env 작업. 없으면 캡션은 전사 원문 폴백.
 
 ## 10. 오픈 아이템(구현 중 확인)
-- 인쇄 QR의 **스캔 가능 최소 크기**: A5(148×210) 내지에서 사진 위 QR이 실제로 찍혀 스캔되는지 — 픽셀/여백 산정 후 실 Sandbox 렌더 1건으로 눈 확인.
+- 인쇄 QR의 **스캔 가능 최소 크기 + 밴드 처리**: A5(148×210) 내지에서 "사진+하단 QR밴드" 이미지가 템플릿에 어떻게 앉는지(크롭/스케일), QR이 실제로 찍혀 스캔되는지 — 실 Sandbox 렌더 1건으로 눈 확인. 템플릿에 QR 전용 슬롯이 있으면 그쪽으로 전환.
 - 오디오 mime/확장자: MediaRecorder가 브라우저별 webm/m4a → 서빙 Content-Type 매핑 표 확정.
 
 ## 11. 셀링 포인트 연결(포트폴리오)
