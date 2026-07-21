@@ -17,3 +17,5 @@
 15. `backend/app/routers/photos.py` — 사진 업로드/수정/정렬 API 엔드포인트.
 16. `backend/app/routers/writing.py` — 집필 시작 및 SSE 스트림 라우터.
 17. `backend/app/routers/pages.py` — 페이지 수정/재생성 API 엔드포인트.
+18. `backend/app/sweetbook/client.py` — Sweetbook Book Print API HTTP 클라이언트.
+19. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize).
