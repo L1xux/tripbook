@@ -23,12 +23,17 @@ export default function NewTrip() {
   };
 
   if (!pid) return (
-    <div style={{ padding: "24px 20px 100px" }}>
-      <input placeholder="여행 제목 — 예: 제주, 봄" value={title} onChange={(e) => setTitle(e.target.value)}
-        style={{ font: "800 22px/1.3 var(--sans)", border: 0, background: "transparent", width: "100%", outline: "none", padding: 0 }} />
-      <input placeholder="함께한 사람 (선택)" value={companions} onChange={(e) => setCompanions(e.target.value)}
-        style={{ border: 0, borderBottom: "1px solid var(--line)", background: "transparent", width: "100%", padding: "8px 0", marginTop: 8, borderRadius: 0 }} />
-      {error && <p className="error-text">{error}</p>}
+    <div style={{ minHeight: "100dvh", paddingBottom: 100 }}>
+      <div className="cap-header">
+        <button className="backbtn" onClick={() => nav("/")} aria-label="서재로">←</button>
+      </div>
+      <div style={{ padding: "4px 20px 0" }}>
+        <input placeholder="여행 제목 — 예: 제주, 봄" value={title} onChange={(e) => setTitle(e.target.value)}
+          style={{ font: "800 22px/1.3 var(--sans)", border: 0, background: "transparent", width: "100%", outline: "none", padding: 0 }} />
+        <input placeholder="함께한 사람 (선택)" value={companions} onChange={(e) => setCompanions(e.target.value)}
+          style={{ border: 0, borderBottom: "1px solid var(--line)", background: "transparent", width: "100%", padding: "8px 0", marginTop: 8, borderRadius: 0 }} />
+        {error && <p className="error-text">{error}</p>}
+      </div>
       <div className="bottom-bar">
         <button className="btn" style={{ width: "100%" }} onClick={start}>여행 시작하기</button>
       </div>
