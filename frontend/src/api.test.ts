@@ -21,4 +21,11 @@ describe("api v2", () => {
     expect(init.method).toBe("POST");
     expect(init.body).toBeInstanceOf(FormData);
   });
+  it("getMoment fetches /api/v1/moments/{id}", async () => {
+    const { getMoment } = await import("./api");
+    await getMoment("m9");
+    const [url] = (fetch as any).mock.calls.at(-1);
+    expect(url).toContain("/api/v1/moments/m9");
+    expect(url).not.toContain("/audio");
+  });
 });

@@ -53,3 +53,7 @@ export const createOrder = (id: string, spec: object, shipping: object) =>
 export const getOrderStatus = (id: string) =>
   req<{ order_status: string | null; recipients: { name: string; order_status: string | null }[] }>(
     `/api/v1/projects/${id}/order/status`);
+export interface PublicMoment { id: string; caption: string | null; transcript: string | null;
+  emotion: string | null; project_title: string; has_audio: boolean; }
+export const audioUrl = (momentId: string) => `${BASE}/api/v1/moments/${momentId}/audio`;
+export const getMoment = (id: string) => req<PublicMoment>(`/api/v1/moments/${id}`);
