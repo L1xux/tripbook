@@ -39,6 +39,7 @@ class ProjectOut(BaseModel):
     title: str
     status: str
     cover_line: str | None
+    emotion_arc: str | None
     reveal_mode: str
     start_date: str | None
     end_date: str | None

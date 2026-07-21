@@ -22,12 +22,13 @@ export interface Moment { id: string; sort_order: number; emotion: string | null
 export interface Recipient { id: string; name: string; phone: string | null; address: string;
   gift_message: string | null; order_status: string | null; }
 export interface Project { id: string; title: string; status: string; cover_line: string | null;
-  reveal_mode: string; start_date: string | null; end_date: string | null; companions: string | null;
-  order_status: string | null; photos: Moment[]; recipients: Recipient[]; }
+  emotion_arc: string | null; reveal_mode: string; start_date: string | null; end_date: string | null;
+  companions: string | null; order_status: string | null; photos: Moment[]; recipients: Recipient[]; }
 
 export const createProject = (b: { title: string; start_date?: string; end_date?: string; companions?: string; cover_line?: string }) =>
   req<{ id: string }>("/api/v1/projects", { method: "POST", body: JSON.stringify(b) });
 export const getProject = (id: string) => req<Project>(`/api/v1/projects/${id}`);
+export const generateArc = (id: string) => req<{ arc: string | null }>(`/api/v1/projects/${id}/emotion-arc`, { method: "POST" });
 export const uploadPhotos = (id: string, files: File[]) => {
   const fd = new FormData(); files.forEach((f) => fd.append("files", f));
   return req<{ photos: Moment[] }>(`/api/v1/projects/${id}/photos`, { method: "POST", body: fd });
