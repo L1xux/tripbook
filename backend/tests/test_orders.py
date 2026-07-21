@@ -39,6 +39,33 @@ def test_gift_order_creates_one_print_per_person(client, monkeypatch):
     assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "ORDERED"
 
 
+def test_webhook_updates_project_and_recipient(client, monkeypatch):
+    import app.routers.orders as orders
+    global _ORDER_SEQ
+    # 다른 테스트가 모듈 전역 _ORDER_SEQ를 먼저 소진했을 수 있으므로 이 테스트 전용으로 리셋한다
+    _ORDER_SEQ = iter(["O-me-wh", "O-mom-wh"])
+    monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)
+    pid = _project_with_photo(client, monkeypatch)
+    client.post(f"/api/v1/projects/{pid}/recipients", json={"name": "엄마", "address": "서울"})
+    res = client.post(f"/api/v1/projects/{pid}/order",
+                      json={"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산"}})
+    assert res.status_code == 200
+    body = res.json()
+    me_uid = next(o["order_uid"] for o in body["orders"] if o["to"] == "나")
+    mom_uid = next(o["order_uid"] for o in body["orders"] if o["to"] == "엄마")
+
+    res = client.post("/api/v1/webhooks/sweetbook", json={"orderUid": mom_uid, "status": "SHIPPING"})
+    assert res.status_code == 200
+    status = client.get(f"/api/v1/projects/{pid}/order/status").json()
+    recipient = next(r for r in status["recipients"] if r["name"] == "엄마")
+    assert recipient["order_status"] == "SHIPPING"
+
+    res = client.post("/api/v1/webhooks/sweetbook", json={"orderUid": me_uid, "status": "PRINTING"})
+    assert res.status_code == 200
+    status = client.get(f"/api/v1/projects/{pid}/order/status").json()
+    assert status["order_status"] == "PRINTING"
+
+
 def test_order_requires_photos(client, monkeypatch):
     import app.routers.orders as orders
     monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)

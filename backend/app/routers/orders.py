@@ -66,8 +66,8 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
                                      "phone": r.phone, "giftMessage": r.gift_message})
             r.sweetbook_order_id = o.get("orderUid"); r.order_status = "ORDERED"
             orders.append({"to": r.name, "order_uid": o.get("orderUid")})
-    except SweetbookError as e:
-        raise HTTPException(502, f"주문에 실패했습니다: {e}")
+    except SweetbookError:
+        raise HTTPException(502, "주문에 실패했습니다. 잠시 후 다시 시도해주세요")
     project.sweetbook_book_id = book_uid
     project.order_status = "ORDERED"
     project.status = "ordered"
