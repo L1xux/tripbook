@@ -83,7 +83,11 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
     photo = get_or_404(db, Photo, photo_id, "moment")
     base = Path(get_settings().data_dir) / "audio" / photo.project_id
     base.mkdir(parents=True, exist_ok=True)
-    dest = base / f"{photo.id}.m4a"
+    # 업로드 확장자를 보존한다 — Whisper가 파일명 확장자로 포맷을 판별하므로 webm을 .m4a로 저장하면 전사가 틀어진다
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in (".webm", ".m4a", ".mp4", ".ogg", ".wav", ".mp3"):
+        ext = ".m4a"
+    dest = base / f"{photo.id}{ext}"
     dest.write_bytes(file.file.read())
     photo.audio_path = str(dest)
     db.commit()

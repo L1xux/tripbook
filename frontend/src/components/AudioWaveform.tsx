@@ -18,18 +18,21 @@ export default function AudioWaveform({ src, bars = 32 }: { src: string; bars?: 
         const buf = await res.arrayBuffer();
         const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         const ctx = new AC();
-        const decoded = await ctx.decodeAudioData(buf);
-        const data = decoded.getChannelData(0);
-        const block = Math.floor(data.length / bars) || 1;
-        const out: number[] = [];
-        for (let i = 0; i < bars; i++) {
-          let sum = 0;
-          for (let j = 0; j < block; j++) sum += Math.abs(data[i * block + j] || 0);
-          out.push(sum / block);
+        try {
+          const decoded = await ctx.decodeAudioData(buf);
+          const data = decoded.getChannelData(0);
+          const block = Math.floor(data.length / bars) || 1;
+          const out: number[] = [];
+          for (let i = 0; i < bars; i++) {
+            let sum = 0;
+            for (let j = 0; j < block; j++) sum += Math.abs(data[i * block + j] || 0);
+            out.push(sum / block);
+          }
+          const max = Math.max(...out, 1e-4);
+          if (!cancelled) setPeaks(out.map((v) => v / max));
+        } finally {
+          ctx.close();  // 디코드 실패(예: Safari의 webm)해도 컨텍스트를 반드시 닫아 누수 방지
         }
-        const max = Math.max(...out, 1e-4);
-        if (!cancelled) setPeaks(out.map((v) => v / max));
-        ctx.close();
       } catch { /* 폴백 정적 막대 사용 */ }
     })();
     return () => { cancelled = true; };

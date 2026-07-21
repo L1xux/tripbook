@@ -19,6 +19,7 @@ class MomentOut(BaseModel):
     transcript: str | None
     suggested_emotion: str | None
     analysis_status: str
+    has_audio: bool
     model_config = {"from_attributes": True}
 
 

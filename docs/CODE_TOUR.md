@@ -46,5 +46,5 @@
 23. `frontend/src/components/MomentCard.tsx` — 순간 카드(탭→글귀 시트). **여기서 볼 것:** 캡션 없으면 transcript로 폴백, 시그니처(글귀+**실제 음성 파형+재생**+스탬프).
 24. `frontend/src/components/AudioWaveform.tsx` — **진짜** 음성 파형+재생. **여기서 볼 것:** 오디오를 Web Audio(`decodeAudioData`)로 디코드해 실제 진폭 막대, 탭 재생/진행, 실패 시 정적 막대 폴백.
 25. `frontend/src/screens/Voice.tsx` — 공개 재생 페이지 `/v/:id`(인쇄 QR 목적지). **여기서 볼 것:** `getMoment`로 사진+명조 글귀+파형, 없는 순간엔 "이 순간은 더 이상 없어요".
-25. `frontend/src/components/BookPreview.tsx` — 책 펼침면 미리보기(사진|명조 캡션). **여기서 볼 것:** "이대로 인쇄된다"는 신뢰를 주는 spread 레이아웃.
-26. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 동행자 선물 토글 시 합계 2배, `BOOK_SPEC`의 `REPLACE_ME`(Sweetbook Sandbox 값으로 교체 필요).
+26. `frontend/src/components/BookPreview.tsx` — 책 펼침면 미리보기(사진|명조 캡션). **여기서 볼 것:** "이대로 인쇄된다"는 신뢰를 주는 spread 레이아웃.
+27. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 연락처·우편번호 입력, 동행자 선물 토글 시 합계 2배, `BOOK_SPEC`(SQUAREBOOK_HC + 일기장A + 빈내지, Sandbox 확정값).

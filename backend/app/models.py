@@ -44,6 +44,10 @@ class Photo(Base):
     suggested_emotion: Mapped[str | None] = mapped_column(String, nullable=True)  # AI가 제안한 감정
     analysis_status: Mapped[str] = mapped_column(String, default="pending")
 
+    @property
+    def has_audio(self) -> bool:
+        return bool(self.audio_path)
+
 
 class Recipient(Base):
     """선물 수령인 — 주문 시 1명당 인쇄 1권."""
