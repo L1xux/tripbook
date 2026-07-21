@@ -64,6 +64,8 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .emotion{ border:1.5px solid var(--line); border-radius:999px; background:var(--card);
   padding:4px 12px; font:500 12.5px/1 var(--sans); color:var(--soft); cursor:pointer; }
 .emotion.on{ border-color:var(--stamp); background:var(--stamp-soft); color:var(--stamp); font-weight:700; }
+.emotion.suggested{ border-color:var(--stamp); border-style:dashed; color:var(--stamp); }
+.ai-hint{ font:500 12px/1.4 var(--sans); color:var(--stamp); margin:8px 0 2px; }
 
 /* ── 앨범 화면(덱/그리드/책/주문 공통 셸) ── */
 .album-screen{ position:relative; min-height:100dvh; }
