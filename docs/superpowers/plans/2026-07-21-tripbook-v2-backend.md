@@ -797,7 +797,9 @@ def build_content_payload(moment, spec: dict) -> dict:
     return {"templateUid": spec.get("contentTemplateUid"),
             "params": {"photoId": getattr(moment, "id", None), "caption": getattr(moment, "caption", None) or ""}}
 ```
-  그리고 `backend/tests/test_sweetbook.py`의 `test_renderer_calls_full_sequence` 안의 가짜 페이지 객체를 순간 형태로 바꾼다:
+  그리고 `backend/tests/test_sweetbook.py`의 `test_renderer_calls_full_sequence`에서:
+  - 사용하지 않는 `from app.ai.parser import ParsedPage` 줄을 삭제한다(parser 모듈은 Task 2에서 제거됨 — 이 import가 남아 있으면 test_sweetbook이 ModuleNotFoundError로 깨진다).
+  - 가짜 페이지 객체를 순간 형태로 바꾼다:
 ```python
     pages = [type("Pg", (), {"id": "m1", "photo_id": None, "caption": "글", "page_number": 1})()]
 ```
