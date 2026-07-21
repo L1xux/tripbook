@@ -12,11 +12,27 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // 사진 업로드 후 Haiku 비전이 감정 후보(suggested_emotion)를 채우면 화면에 반영한다(짧게 폴링)
+  const pollSuggestions = (ids: string[]) => {
+    let tries = 0;
+    const poll = setInterval(async () => {
+      tries++;
+      const p = await getAnalysis(projectId);
+      setMoments((cur) => cur.map((x) => {
+        const s = p.photos.find((y) => y.id === x.id);
+        return s?.suggested_emotion ? { ...x, suggested_emotion: s.suggested_emotion } : x;
+      }));
+      const settled = ids.every((id) => p.photos.find((y) => y.id === id)?.suggested_emotion);
+      if (settled || tries >= 6) clearInterval(poll);
+    }, 2500);
+  };
+
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     try {
       const { photos } = await uploadPhotos(projectId, [...files]);
       setMoments((cur) => [...cur, ...photos]);
+      pollSuggestions(photos.map((p) => p.id));
     } catch (e) { setError(e instanceof Error ? e.message : "사진을 올리지 못했어요"); }
   };
 
@@ -51,10 +67,17 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
             <Recorder onRecorded={(b) => onAudio(m, b)} />
             {m.analysis_status === "done" && m.caption && <p className="capture-cap">“{m.caption}”</p>}
             {m.analysis_status === "pending" && m.caption == null && <p className="capture-cap muted">녹음하면 여기에 글귀가 생겨요</p>}
+            {!m.emotion && m.suggested_emotion && <p className="ai-hint">✨ AI가 이 순간을 “{m.suggested_emotion}”으로 봤어요 — 탭해서 선택</p>}
             <div className="emotions">
-              {EMOTIONS.map((e) => (
-                <button key={e} className={"emotion" + (m.emotion === e ? " on" : "")} onClick={() => setEmotion(m, e)}>{e}</button>
-              ))}
+              {EMOTIONS.map((e) => {
+                const on = m.emotion === e;
+                const suggested = !m.emotion && m.suggested_emotion === e;
+                return (
+                  <button key={e} className={"emotion" + (on ? " on" : "") + (suggested ? " suggested" : "")} onClick={() => setEmotion(m, e)}>
+                    {suggested ? "✨ " : ""}{e}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
