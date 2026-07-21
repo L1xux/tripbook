@@ -51,7 +51,10 @@ export default function Album() {
     <div className="album-screen dark">
       <div className="bar light">
         <span onClick={() => nav("/")}>‹ {p.title}</span>
-        <span className="ic" onClick={() => setView("grid")}>▦</span>
+        <span style={{ display: "flex", gap: 10 }}>
+          <span className="ic" onClick={() => nav(`/p/${id}/add`)} aria-label="순간 담기">＋</span>
+          <span className="ic" onClick={() => setView("grid")}>▦</span>
+        </span>
       </div>
       {!atEnd && <span className="counter">{String(idx + 1).padStart(2, "0")} / {String(M.length).padStart(2, "0")}</span>}
       <div className="deck">
