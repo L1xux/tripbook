@@ -8,7 +8,7 @@ const BOOK_PRICE = 12600; // SQUAREBOOK_HC 기본가 — 배송비는 결제 시
 // Sweetbook Sandbox 확정값: 스퀘어 하드커버(SQUAREBOOK_HC) + 표지 "일기장A"(taupe/명조, 우리 디자인과 일치) + 공용 빈내지
 const BOOK_SPEC = { bookSpecUid: "SQUAREBOOK_HC", coverTemplateUid: "79yjMH3qRPly", contentTemplateUid: "2mi1ao0Z4Vxl" };
 
-export default function OrderSheet({ project }: { project: Project }) {
+export default function OrderSheet({ project, onViewStatus }: { project: Project; onViewStatus?: () => void }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [postal, setPostal] = useState("");
@@ -48,6 +48,9 @@ export default function OrderSheet({ project }: { project: Project }) {
         ))}
         <p className="muted receipt-note">인쇄와 제본이 끝나면 배송이 시작돼요. 진행 상황은 문자로 알려드려요.</p>
       </div>
+      {onViewStatus && (
+        <button className="btn" style={{ width: "100%", marginTop: 18 }} onClick={onViewStatus}>주문 현황 보기</button>
+      )}
     </div>
   );
 
