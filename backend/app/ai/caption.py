@@ -2,7 +2,7 @@
 import app.db as db_module
 from app.models import Photo
 from app.ai.stt import transcribe
-from app.ai.llm import ANALYSIS_MODEL, first_text, get_client
+from app.ai.oai import CHAT_MODEL, get_oai_client
 
 # 왜 별도 상수: 창작 금지 규칙을 프롬프트와 테스트가 같은 문자열로 공유한다
 NO_INVENTION = "원문에 없는 사실·감정·인물·장소를 추가하지 않는다"
@@ -19,11 +19,11 @@ def build_caption_prompt(transcript: str) -> str:
 
 
 def polish_caption(transcript: str) -> str:
-    res = get_client().messages.create(
-        model=ANALYSIS_MODEL, max_tokens=300,
+    res = get_oai_client().chat.completions.create(
+        model=CHAT_MODEL,
         messages=[{"role": "user", "content": build_caption_prompt(transcript)}],
     )
-    return first_text(res).strip()
+    return (res.choices[0].message.content or "").strip()
 
 
 def transcribe_and_caption(photo_id: str) -> None:

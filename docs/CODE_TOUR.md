@@ -19,10 +19,11 @@
 
 ## AI 파이프라인
 
-9. `backend/app/ai/llm.py` — Anthropic 클라이언트 팩토리+모델 상수. **여기서 볼 것:** `ANALYSIS_MODEL="claude-haiku-4-5"`, lru_cache로 커넥션 풀 재사용(analysis/caption이 공유).
-10. `backend/app/ai/analysis.py` — 사진 비전 분석(Haiku 4.5 structured outputs)으로 감정 제안. **여기서 볼 것:** 리사이즈본(_small.jpg) 사용, `analyze_batch`가 스레드풀로 병렬화하는 이유(BackgroundTasks 직렬 실행 회피).
-11. `backend/app/ai/stt.py` — 음성 전사(OpenAI Whisper `whisper-1`). **여기서 볼 것:** `get_stt_client`가 monkeypatch 대상(테스트에서 교체).
-12. `backend/app/ai/caption.py` — 전사→충실한 캡션 편집. **여기서 볼 것:** `NO_INVENTION` 불변식(원문에 없는 사실·감정 추가 금지), 편집 실패 시 전사 원문을 캡션으로 보존하는 폴백.
+9. `backend/app/ai/oai.py` — OpenAI 클라이언트 팩토리+모델 상수. **여기서 볼 것:** `CHAT_MODEL="gpt-4o-mini"`(캡션·감정·아크 공용), lru_cache로 커넥션 재사용. (`llm.py`는 Anthropic용 v1 레거시 — 현재 미사용.)
+10. `backend/app/ai/analysis.py` — 사진 비전 분석(gpt-4o-mini, `response_format` json_schema strict)으로 감정 제안. **여기서 볼 것:** 리사이즈본(_small.jpg) 사용, `analyze_batch`가 스레드풀로 병렬화하는 이유(BackgroundTasks 직렬 실행 회피).
+11. `backend/app/ai/stt.py` — 음성 전사(OpenAI Whisper `whisper-1`, `language="ko"`). **여기서 볼 것:** `get_stt_client`가 monkeypatch 대상(테스트에서 교체).
+12. `backend/app/ai/caption.py` — 전사→충실한 캡션 편집(gpt-4o-mini). **여기서 볼 것:** `NO_INVENTION` 불변식(원문에 없는 사실·감정 추가 금지), 편집 실패 시 전사 원문을 캡션으로 보존하는 폴백.
+12b. `backend/app/ai/arc.py` — 여행 감정 아크 요약(gpt-4o-mini). **여기서 볼 것:** 캡션 있는 순간만 요약, 글귀 없으면 None(지어내지 않음).
 13. `backend/app/imaging.py` — 이미지 리사이즈+EXIF 촬영일 추출. **여기서 볼 것:** MAX_EDGE=1100 선택 이유(비전 토큰 절감).
 
 ## Sweetbook 연동
