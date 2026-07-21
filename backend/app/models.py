@@ -1,4 +1,4 @@
-"""DB 테이블 정의(Project/Photo/Page). / 라우터와 AI 파이프라인이 호출. / db.Base를 사용."""
+"""DB 테이블 정의(Project/Photo=순간/Recipient). / 라우터와 AI 파이프라인이 호출. / db.Base를 사용."""
 import uuid
 from datetime import datetime
 from sqlalchemy import String, Integer, Text, ForeignKey, DateTime
@@ -17,40 +17,49 @@ class Project(Base):
     start_date: Mapped[str | None] = mapped_column(String, nullable=True)
     end_date: Mapped[str | None] = mapped_column(String, nullable=True)
     companions: Mapped[str | None] = mapped_column(String, nullable=True)
-    mood: Mapped[str] = mapped_column(String)  # 무드 5종 enum 값
-    status: Mapped[str] = mapped_column(String, default="draft")
+    cover_line: Mapped[str | None] = mapped_column(String, nullable=True)  # 표지 문구
+    reveal_mode: Mapped[str] = mapped_column(String, default="slide")  # slide | dim (설계 3.5 A/B)
+    status: Mapped[str] = mapped_column(String, default="draft")  # draft | ordered
     sweetbook_book_id: Mapped[str | None] = mapped_column(String, nullable=True)
     sweetbook_order_id: Mapped[str | None] = mapped_column(String, nullable=True)
     order_status: Mapped[str | None] = mapped_column(String, nullable=True)
     photos: Mapped[list["Photo"]] = relationship(order_by="Photo.sort_order", cascade="all, delete-orphan")
-    pages: Mapped[list["Page"]] = relationship(order_by="Page.page_number", cascade="all, delete-orphan")
+    recipients: Mapped[list["Recipient"]] = relationship(cascade="all, delete-orphan")
 
 
 class Photo(Base):
+    """한 '순간' — 사진 + 음성 + 캡션 + 감정."""
     __tablename__ = "photos"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uid)
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     file_path: Mapped[str] = mapped_column(String)
     taken_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    emotion: Mapped[str | None] = mapped_column(String, nullable=True)
+    emotion: Mapped[str | None] = mapped_column(String, nullable=True)  # 사용자가 고른 감정 태그
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    ai_scene_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    audio_path: Mapped[str | None] = mapped_column(String, nullable=True)  # 원본 음성
+    transcript: Mapped[str | None] = mapped_column(Text, nullable=True)  # Whisper 전사 원문
+    caption: Mapped[str | None] = mapped_column(Text, nullable=True)  # AI 정리본(사용자 수정 가능)
+    ai_scene_description: Mapped[str | None] = mapped_column(Text, nullable=True)  # 감정 제안 근거(내부)
+    suggested_emotion: Mapped[str | None] = mapped_column(String, nullable=True)  # AI가 제안한 감정
     analysis_status: Mapped[str] = mapped_column(String, default="pending")
-    user_scene_correction: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    @property
-    def scene(self) -> str | None:
-        """UI/프롬프트에 쓰는 장면 1문장. 사용자 교정이 있으면 그것이 우선.
-        (ai_scene_description 컬럼은 '1문장\\n전체JSON' 포맷 — 해석은 여기 한 곳에서만 한다)"""
-        if self.user_scene_correction:
-            return self.user_scene_correction
-        if self.ai_scene_description:
-            return self.ai_scene_description.split("\n")[0]
-        return None
+
+class Recipient(Base):
+    """선물 수령인 — 주문 시 1명당 인쇄 1권."""
+    __tablename__ = "recipients"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uid)
+    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
+    name: Mapped[str] = mapped_column(String)
+    phone: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str] = mapped_column(String, default="")
+    gift_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sweetbook_order_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    order_status: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class Page(Base):
+    """(v1 레거시) 집필 페이지 — 향후 제거. / writer.py가 아직 import하므로 스텁으로 유지."""
     __tablename__ = "pages"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=_uid)
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))

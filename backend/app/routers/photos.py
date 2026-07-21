@@ -11,14 +11,15 @@ from app.imaging import save_resized, small_path
 from app.routers.projects import get_project_or_404
 from app.schemas import PhotoOut
 import app.ai.analysis as analysis
+import app.ai.caption as caption
 
 router = APIRouter(prefix="/api/v1", tags=["photos"])
 
 
-class PhotoPatch(BaseModel):
-    note: str | None = None
+class MomentPatch(BaseModel):
     emotion: str | None = None
-    user_scene_correction: str | None = None
+    note: str | None = None
+    caption: str | None = None
 
 
 class OrderBody(BaseModel):
@@ -63,7 +64,8 @@ def upload_photos(
 def analysis_status(project_id: str, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
     return {"photos": [
-        {"id": p.id, "analysis_status": p.analysis_status, "scene": p.scene}
+        {"id": p.id, "analysis_status": p.analysis_status,
+         "suggested_emotion": p.suggested_emotion, "caption": p.caption, "transcript": p.transcript}
         for p in project.photos
     ]}
 
@@ -75,9 +77,22 @@ def photo_image(photo_id: str, db: Session = Depends(get_db)):
     return FileResponse(small_path(photo.file_path), media_type="image/jpeg")
 
 
-@router.patch("/photos/{photo_id}")
-def patch_photo(photo_id: str, body: PhotoPatch, db: Session = Depends(get_db)):
-    photo = get_or_404(db, Photo, photo_id, "photo")
+@router.post("/moments/{photo_id}/audio", status_code=202)
+def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    base = Path(get_settings().data_dir) / "audio" / photo.project_id
+    base.mkdir(parents=True, exist_ok=True)
+    dest = base / f"{photo.id}.m4a"
+    dest.write_bytes(file.file.read())
+    photo.audio_path = str(dest)
+    db.commit()
+    background.add_task(caption.transcribe_and_caption, photo.id)
+    return {"id": photo.id, "transcript_pending": True}
+
+
+@router.patch("/moments/{photo_id}")
+def patch_moment(photo_id: str, body: MomentPatch, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(photo, k, v)
     db.commit()

@@ -7,16 +7,15 @@ from app.models import Photo
 from app.imaging import small_path
 from app.ai.llm import ANALYSIS_MODEL, first_text, get_client
 
+EMOTIONS = ["설렘", "행복", "평온", "뭉클", "신남", "아쉬움"]
+
 ANALYSIS_SCHEMA = {
     "type": "object",
     "properties": {
         "scene": {"type": "string", "description": "사진 장면을 한국어 1문장으로"},
-        "location_guess": {"type": "string"},
-        "mood": {"type": "string"},
-        "people": {"type": "string"},
-        "notable_details": {"type": "array", "items": {"type": "string"}},
+        "suggested_emotion": {"type": "string", "enum": EMOTIONS},
     },
-    "required": ["scene", "location_guess", "mood", "people", "notable_details"],
+    "required": ["scene", "suggested_emotion"],
     "additionalProperties": False,
 }
 
@@ -26,12 +25,11 @@ def analyze_image(image_path: str) -> dict:
     with open(small_path(image_path), "rb") as f:
         data = base64.standard_b64encode(f.read()).decode()
     res = get_client().messages.create(
-        model=ANALYSIS_MODEL,
-        max_tokens=1024,
+        model=ANALYSIS_MODEL, max_tokens=512,
         output_config={"format": {"type": "json_schema", "schema": ANALYSIS_SCHEMA}},
         messages=[{"role": "user", "content": [
             {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}},
-            {"type": "text", "text": "이 여행 사진에 무엇이 찍혔는지 분석해줘."},
+            {"type": "text", "text": "이 여행 사진의 장면과 어울리는 감정 하나를 골라줘."},
         ]}],
     )
     return json.loads(first_text(res))
@@ -43,12 +41,11 @@ def analyze_and_save(photo_id: str) -> None:
         if not photo:
             return
         try:
-            result = analyze_image(photo.file_path)
-            # 왜 scene만 앞에 빼는가: UI 카드에는 1문장만 보여주고, 집필 프롬프트엔 전체 JSON을 쓴다
-            photo.ai_scene_description = result["scene"] + "\n" + json.dumps(result, ensure_ascii=False)
-            photo.analysis_status = "done"
+            r = analyze_image(photo.file_path)
+            photo.ai_scene_description = r["scene"]
+            photo.suggested_emotion = r["suggested_emotion"]
         except Exception:
-            photo.analysis_status = "failed"
+            pass  # 감정 제안은 실패해도 무해 — 사용자가 직접 고를 수 있다
         db.commit()
 
 

@@ -16,7 +16,7 @@ def get_project_or_404(db: Session, project_id: str) -> Project:
 def create_project(body: ProjectCreate, db: Session = Depends(get_db)):
     p = Project(**body.model_dump())
     db.add(p); db.commit(); db.refresh(p)
-    return {"id": p.id, "title": p.title, "mood": p.mood, "status": p.status}
+    return {"id": p.id, "title": p.title, "status": p.status}
 
 
 @router.get("/projects/{project_id}", response_model=ProjectOut)

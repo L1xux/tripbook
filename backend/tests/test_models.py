@@ -1,15 +1,17 @@
-from app.models import Project, Photo, Page
 import app.db as db_module
+from app.models import Project, Photo, Recipient
 
 
-def test_create_project_with_photo_and_page(client):
+def test_project_moment_recipient(client):
     db = db_module.SessionLocal()
-    p = Project(title="제주 여행", mood="family_essay")
+    p = Project(title="제주, 봄")
     db.add(p); db.commit()
-    ph = Photo(project_id=p.id, sort_order=0, file_path="x.jpg", emotion="행복", note="바다")
-    db.add(ph); db.commit()
-    pg = Page(project_id=p.id, page_number=1, photo_id=ph.id, text="글", ai_text="글")
-    db.add(pg); db.commit()
+    m = Photo(project_id=p.id, sort_order=0, file_path="x.jpg",
+             emotion="평온", caption="바다가 파랬다", transcript="어 바다가 진짜 파랬어")
+    db.add(m); db.commit()
+    r = Recipient(project_id=p.id, name="엄마", address="서울")
+    db.add(r); db.commit()
     assert p.status == "draft"
-    assert ph.analysis_status == "pending"
-    assert len(p.photos) == 1 and len(p.pages) == 1
+    assert p.reveal_mode == "slide"
+    assert m.analysis_status == "pending"
+    assert len(p.photos) == 1 and len(p.recipients) == 1
