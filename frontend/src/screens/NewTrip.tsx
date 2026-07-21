@@ -36,11 +36,14 @@ export default function NewTrip() {
   );
 
   return (
-    <div style={{ padding: "24px 20px 100px" }}>
-      <h1 style={{ font: "800 22px/1.3 var(--sans)", letterSpacing: "-.02em" }}>{title}</h1>
-      <MomentCapture projectId={pid} initialMoments={[]} />
-      <div className="bottom-bar">
-        <button className="btn" style={{ width: "100%" }} onClick={() => nav(`/p/${pid}`)}>여행 앨범 열기</button>
+    <div className="album-screen light">
+      <div className="bar dark">
+        <span onClick={() => nav("/")}>‹ 서재</span>
+        <span onClick={() => nav(`/p/${pid}`)}>앨범 →</span>
+      </div>
+      <div style={{ padding: "62px 20px 40px" }}>
+        <h1 style={{ font: "800 22px/1.3 var(--sans)", letterSpacing: "-.02em" }}>{title}</h1>
+        <MomentCapture projectId={pid} initialMoments={[]} />
       </div>
     </div>
   );

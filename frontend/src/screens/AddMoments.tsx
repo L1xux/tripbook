@@ -15,12 +15,11 @@ export default function AddMoments() {
   if (!p) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
 
   return (
-    <div style={{ padding: "24px 20px 100px" }}>
-      <p className="kicker">{(p.title || "TRIP").toUpperCase()}</p>
-      <h1 style={{ font: "800 22px/1.3 var(--sans)", letterSpacing: "-.02em" }}>순간 담기</h1>
-      <MomentCapture projectId={id} initialMoments={p.photos} />
-      <div className="bottom-bar">
-        <button className="btn" style={{ width: "100%" }} onClick={() => nav(`/p/${id}`)}>여행 앨범으로</button>
+    <div className="album-screen light">
+      <div className="bar dark"><span onClick={() => nav(`/p/${id}`)}>‹ {p.title}</span></div>
+      <div style={{ padding: "62px 20px 40px" }}>
+        <h1 style={{ font: "800 22px/1.3 var(--sans)", letterSpacing: "-.02em" }}>순간 담기</h1>
+        <MomentCapture projectId={id} initialMoments={p.photos} />
       </div>
     </div>
   );

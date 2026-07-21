@@ -48,10 +48,15 @@ input:focus{ outline:none; border-color:var(--stamp); }
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
   font:700 11px/1 var(--sans); cursor:pointer; flex-shrink:0; background:transparent; }
 .newbook span{ font-size:24px; font-weight:400; }
+.book-wrap{ position:relative; }
+.book-del{ position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:999px;
+  background:var(--ink); color:#fff; border:0; font:400 15px/1 var(--sans); cursor:pointer; z-index:4;
+  display:flex; align-items:center; justify-content:center; padding:0; box-shadow:0 2px 6px rgba(0,0,0,.3); }
 
 /* ── 순간 담기(NewTrip) ── */
-.capture-card{ display:flex; gap:14px; background:var(--card); border-radius:16px; box-shadow:0 2px 10px rgba(64,44,20,.08);
+.capture-card{ position:relative; display:flex; gap:14px; background:var(--card); border-radius:16px; box-shadow:0 2px 10px rgba(64,44,20,.08);
   padding:14px; margin:14px 0; }
+.cap-del{ position:absolute; top:8px; right:10px; border:0; background:none; color:var(--soft); font-size:20px; line-height:1; cursor:pointer; z-index:2; padding:0; }
 .capture-thumb{ width:84px; height:84px; object-fit:cover; border-radius:8px; flex-shrink:0; background:#d9d2c5; }
 .capture-cap{ font:400 14px/1.7 var(--serif); color:var(--ink); margin:10px 0; word-break:keep-all; }
 .capture-cap.muted{ color:var(--soft); font-family:var(--sans); font-size:13px; }
