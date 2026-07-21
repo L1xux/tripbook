@@ -25,6 +25,19 @@ def test_upload_resizes_and_creates_rows(client, monkeypatch, tmp_path):
     assert [p["sort_order"] for p in photos] == [0, 1]
 
 
+def test_photo_image_served(client, monkeypatch):
+    import app.ai.analysis as analysis
+    monkeypatch.setattr(analysis, "analyze_and_save", lambda photo_id: None)
+    pid = _project(client)
+    photo = client.post(
+        f"/api/v1/projects/{pid}/photos",
+        files=[("files", ("a.jpg", _jpg(), "image/jpeg"))],
+    ).json()["photos"][0]
+    res = client.get(f"/api/v1/photos/{photo['id']}/image")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/jpeg"
+
+
 def test_patch_photo_and_reorder(client, monkeypatch):
     import app.ai.analysis as analysis
     monkeypatch.setattr(analysis, "analyze_and_save", lambda photo_id: None)

@@ -41,6 +41,7 @@ export const patchPhoto = (photoId: string, b: Partial<Pick<Photo, "note" | "emo
   req(`/api/v1/photos/${photoId}`, { method: "PATCH", body: JSON.stringify(b) });
 export const reorderPhotos = (id: string, photo_ids: string[]) =>
   req(`/api/v1/projects/${id}/photos/order`, { method: "PATCH", body: JSON.stringify({ photo_ids }) });
+export const photoImageUrl = (photoId: string) => `${BASE}/api/v1/photos/${photoId}/image`;
 export const startWriting = (id: string) => req(`/api/v1/projects/${id}/write`, { method: "POST" });
 export const writeStreamUrl = (id: string) => `${BASE}/api/v1/projects/${id}/write/stream`;
 export const patchPage = (pageId: string, text: string) =>

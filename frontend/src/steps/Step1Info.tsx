@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProject, type Mood } from "../api";
+import Wizard from "../Wizard";
 
 const MOODS: { value: Mood; label: string; desc: string }[] = [
   { value: "family_essay", label: "따뜻한 가족 에세이", desc: "사소한 순간에서 의미를 찾는 회고" },
@@ -19,9 +20,11 @@ export default function Step1Info() {
   const [end, setEnd] = useState("");
   const [companions, setCompanions] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const submit = async () => {
-    if (!title.trim()) return alert("여행 제목을 입력해주세요");
+    if (!title.trim()) return setError("여행 제목을 적어주세요 — 책의 표지가 됩니다");
+    setError("");
     setBusy(true);
     try {
       const { id } = await createProject({
@@ -29,38 +32,57 @@ export default function Step1Info() {
         companions: companions || undefined,
       });
       nav(`/p/${id}/photos`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "잠시 후 다시 시도해주세요");
     } finally { setBusy(false); }
   };
 
   return (
-    <div>
-      <h1>Tripbook</h1>
-      <p style={{ color: "#6b6558", margin: "4px 0 16px" }}>
-        여행 사진과 몇 줄의 메모가, 한 권의 이야기가 됩니다
+    <Wizard step="info">
+      <p className="eyebrow">여행이 한 권의 책이 됩니다</p>
+      <h1>어떤 여행이었나요</h1>
+      <p className="muted" style={{ marginTop: 6 }}>
+        사진과 몇 줄의 메모만 있으면, 나머지는 작가가 씁니다.
       </p>
-      <label>여행 제목</label>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 제주 봄 여행" />
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-        <div style={{ flex: 1 }}><label>시작일</label>
-          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
-        <div style={{ flex: 1 }}><label>종료일</label>
-          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
-      </div>
-      <div style={{ marginTop: 12 }}><label>동행</label>
-        <input value={companions} onChange={(e) => setCompanions(e.target.value)} placeholder="예: 엄마, 동생" /></div>
-      <h3 style={{ marginTop: 20 }}>어떤 이야기로 만들까요?</h3>
-      {MOODS.map((m) => (
-        <div key={m.value} className="card" onClick={() => setMood(m.value)}
-          style={{ borderColor: mood === m.value ? "#2c6e63" : undefined, cursor: "pointer" }}>
-          <strong>{m.label}</strong>
-          <p style={{ fontSize: 13, color: "#6b6558" }}>{m.desc}</p>
+
+      <label htmlFor="t-title">여행 제목</label>
+      <input id="t-title" value={title} onChange={(e) => setTitle(e.target.value)}
+        placeholder="제주, 봄의 기록" />
+
+      <div style={{ display: "flex", gap: 20 }}>
+        <div style={{ flex: 1 }}>
+          <label htmlFor="t-start">시작일</label>
+          <input id="t-start" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
         </div>
-      ))}
+        <div style={{ flex: 1 }}>
+          <label htmlFor="t-end">종료일</label>
+          <input id="t-end" type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+        </div>
+      </div>
+
+      <label htmlFor="t-comp">함께한 사람</label>
+      <input id="t-comp" value={companions} onChange={(e) => setCompanions(e.target.value)}
+        placeholder="엄마, 동생" />
+
+      <h2 style={{ marginTop: 36 }}>어떤 이야기로 쓸까요</h2>
+      <p className="muted">문체를 고르면 책 전체의 목소리가 정해집니다.</p>
+      <div style={{ marginTop: 8 }}>
+        {MOODS.map((m) => (
+          <button key={m.value} type="button"
+            className={"mood" + (mood === m.value ? " on" : "")}
+            onClick={() => setMood(m.value)} aria-pressed={mood === m.value}>
+            <strong>{m.label}</strong>
+            <p>{m.desc}</p>
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="error-text" role="alert">{error}</p>}
       <div className="bottom-bar">
         <button className="btn-primary" onClick={submit} disabled={busy}>
-          {busy ? "만드는 중..." : "여행 만들기"}
+          {busy ? "책을 펴는 중…" : "이 여행으로 시작하기"}
         </button>
       </div>
-    </div>
+    </Wizard>
   );
 }

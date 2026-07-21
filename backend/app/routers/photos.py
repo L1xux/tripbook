@@ -1,12 +1,13 @@
 """사진 업로드/수정/정렬 라우터. / main.py가 등록. / imaging, ai.analysis 호출."""
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db, get_or_404
 from app.models import Photo
-from app.imaging import save_resized
+from app.imaging import save_resized, small_path
 from app.routers.projects import get_project_or_404
 from app.schemas import PhotoOut
 import app.ai.analysis as analysis
@@ -65,6 +66,13 @@ def analysis_status(project_id: str, db: Session = Depends(get_db)):
         {"id": p.id, "analysis_status": p.analysis_status, "scene": p.scene}
         for p in project.photos
     ]}
+
+
+@router.get("/photos/{photo_id}/image")
+def photo_image(photo_id: str, db: Session = Depends(get_db)):
+    """UI 썸네일용 이미지. 리사이즈본을 우선 서빙한다(원본은 인쇄용이라 무거움)."""
+    photo = get_or_404(db, Photo, photo_id, "photo")
+    return FileResponse(small_path(photo.file_path), media_type="image/jpeg")
 
 
 @router.patch("/photos/{photo_id}")
