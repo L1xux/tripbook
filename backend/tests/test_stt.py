@@ -30,3 +30,22 @@ def test_transcribe_calls_whisper(monkeypatch, tmp_path):
     monkeypatch.setattr(stt, "get_stt_client", lambda: FakeClient())
     f = tmp_path / "v.m4a"; f.write_bytes(b"x")
     assert stt.transcribe(str(f)) == "어 바다가 진짜 파랬어"
+
+
+def test_transcribe_passes_korean_language(monkeypatch, tmp_path):
+    import app.ai.stt as stt
+    calls = {}
+    class Tx:
+        @staticmethod
+        def create(**kw):
+            calls.update(kw)
+            return type("R", (), {"text": "  안녕  "})()
+    class FakeClient:
+        class audio:  # noqa
+            transcriptions = Tx
+    monkeypatch.setattr(stt, "get_stt_client", lambda: FakeClient())
+    f = tmp_path / "a.m4a"; f.write_bytes(b"x")
+    out = stt.transcribe(str(f))
+    assert out == "안녕"
+    assert calls["language"] == "ko"
+    assert calls["model"] == "whisper-1"

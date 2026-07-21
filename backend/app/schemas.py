@@ -19,6 +19,7 @@ class MomentOut(BaseModel):
     transcript: str | None
     suggested_emotion: str | None
     analysis_status: str
+    has_audio: bool
     model_config = {"from_attributes": True}
 
 
@@ -27,6 +28,7 @@ class RecipientOut(BaseModel):
     name: str
     phone: str | None
     address: str
+    postal_code: str | None
     gift_message: str | None
     order_status: str | None
     model_config = {"from_attributes": True}

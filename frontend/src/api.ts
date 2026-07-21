@@ -18,7 +18,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export interface Moment { id: string; sort_order: number; emotion: string | null; note: string | null;
-  caption: string | null; transcript: string | null; suggested_emotion: string | null; analysis_status: string; }
+  caption: string | null; transcript: string | null; suggested_emotion: string | null; analysis_status: string; has_audio: boolean; }
 export interface Recipient { id: string; name: string; phone: string | null; address: string;
   gift_message: string | null; order_status: string | null; }
 export interface Project { id: string; title: string; status: string; cover_line: string | null;
@@ -34,7 +34,10 @@ export const uploadPhotos = (id: string, files: File[]) => {
 };
 export const photoImageUrl = (momentId: string) => `${BASE}/api/v1/photos/${momentId}/image`;
 export const uploadAudio = (momentId: string, blob: Blob) => {
-  const fd = new FormData(); fd.append("file", blob, "voice.m4a");
+  // 실제 녹음 포맷에 맞는 확장자로 올린다 — 서버가 이 확장자로 저장해 Whisper 포맷 판별이 맞는다
+  const t = blob.type;
+  const ext = t.includes("mp4") || t.includes("m4a") ? "m4a" : t.includes("ogg") ? "ogg" : "webm";
+  const fd = new FormData(); fd.append("file", blob, `voice.${ext}`);
   return req<{ id: string }>(`/api/v1/moments/${momentId}/audio`, { method: "POST", body: fd });
 };
 export const getAnalysis = (id: string) =>
@@ -44,7 +47,7 @@ export const patchMoment = (momentId: string, b: Partial<Pick<Moment, "emotion" 
   req(`/api/v1/moments/${momentId}`, { method: "PATCH", body: JSON.stringify(b) });
 export const reorderMoments = (id: string, photo_ids: string[]) =>
   req(`/api/v1/projects/${id}/photos/order`, { method: "PATCH", body: JSON.stringify({ photo_ids }) });
-export const addRecipient = (id: string, b: { name: string; address: string; phone?: string; gift_message?: string }) =>
+export const addRecipient = (id: string, b: { name: string; address: string; phone?: string; postal_code?: string; gift_message?: string }) =>
   req<{ id: string }>(`/api/v1/projects/${id}/recipients`, { method: "POST", body: JSON.stringify(b) });
 export const removeRecipient = (rid: string) => req(`/api/v1/recipients/${rid}`, { method: "DELETE" });
 export const createOrder = (id: string, spec: object, shipping: object) =>
@@ -53,3 +56,7 @@ export const createOrder = (id: string, spec: object, shipping: object) =>
 export const getOrderStatus = (id: string) =>
   req<{ order_status: string | null; recipients: { name: string; order_status: string | null }[] }>(
     `/api/v1/projects/${id}/order/status`);
+export interface PublicMoment { id: string; caption: string | null; transcript: string | null;
+  emotion: string | null; project_title: string; has_audio: boolean; }
+export const audioUrl = (momentId: string) => `${BASE}/api/v1/moments/${momentId}/audio`;
+export const getMoment = (id: string) => req<PublicMoment>(`/api/v1/moments/${id}`);

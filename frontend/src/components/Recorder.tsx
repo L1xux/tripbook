@@ -15,7 +15,7 @@ export default function Recorder({ onRecorded }: { onRecorded: (b: Blob) => void
     const m = new MediaRecorder(stream);
     chunks.current = [];
     m.ondataavailable = (e) => chunks.current.push(e.data);
-    m.onstop = () => { onRecorded(new Blob(chunks.current, { type: "audio/webm" })); stream.getTracks().forEach((t) => t.stop()); };
+    m.onstop = () => { onRecorded(new Blob(chunks.current, { type: m.mimeType || "audio/webm" })); stream.getTracks().forEach((t) => t.stop()); };
     m.start(); mr.current = m; setRec(true); setSec(0);
     timer.current = window.setInterval(() => setSec((s) => s + 1), 1000);
   };

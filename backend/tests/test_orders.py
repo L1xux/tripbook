@@ -13,13 +13,17 @@ def _project_with_photo(client, monkeypatch):
 
 
 _ORDER_SEQ = iter(["O-me", "O-mom"])
+_LAST_ORDER = {}
 
 
 def _mock_client():
+    import json
     from app.sweetbook.client import SweetbookClient
     def handler(req):
-        data = {"bookUid": "B1"}
+        # 렌더 단계(create/cover/contents/finalize)는 pageMeta로 패딩 루프를 즉시 끝낸다
+        data = {"bookUid": "B1", "pageMeta": {"pageMin": 0, "currentPageCount": 99}}
         if req.url.path.endswith("/orders"):
+            _LAST_ORDER.update(json.loads(req.content))
             data = {"orderUid": next(_ORDER_SEQ)}
         return httpx.Response(200, json={"success": True, "message": "ok", "data": data})
     return SweetbookClient("k", "sandbox", transport=httpx.MockTransport(handler))
@@ -36,6 +40,10 @@ def test_gift_order_creates_one_print_per_person(client, monkeypatch):
     body = res.json()
     assert body["book_uid"] == "B1"
     assert len(body["orders"]) == 2  # 나 + 엄마
+    # Sweetbook 주문 스키마: items[] + shipping{recipientName, address1, ...}
+    assert _LAST_ORDER["items"][0]["bookUid"] == "B1"
+    assert _LAST_ORDER["shipping"]["recipientName"] == "엄마"
+    assert _LAST_ORDER["shipping"]["address1"] == "서울"
     assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "ORDERED"
 
 

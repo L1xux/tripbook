@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     sweetbook_env: str = "sandbox"  # sandbox | live
     data_dir: str = "data"
     database_url: str = "sqlite:///data/tripbook.db"
+    public_web_base: str = "http://localhost:5173"  # 인쇄 QR이 가리킬 공개 웹 주소
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

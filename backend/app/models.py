@@ -44,6 +44,10 @@ class Photo(Base):
     suggested_emotion: Mapped[str | None] = mapped_column(String, nullable=True)  # AI가 제안한 감정
     analysis_status: Mapped[str] = mapped_column(String, default="pending")
 
+    @property
+    def has_audio(self) -> bool:
+        return bool(self.audio_path)
+
 
 class Recipient(Base):
     """선물 수령인 — 주문 시 1명당 인쇄 1권."""
@@ -53,6 +57,7 @@ class Recipient(Base):
     name: Mapped[str] = mapped_column(String)
     phone: Mapped[str | None] = mapped_column(String, nullable=True)
     address: Mapped[str] = mapped_column(String, default="")
+    postal_code: Mapped[str | None] = mapped_column(String, nullable=True)  # Sweetbook 주문 필수
     gift_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     sweetbook_order_id: Mapped[str | None] = mapped_column(String, nullable=True)
     order_status: Mapped[str | None] = mapped_column(String, nullable=True)

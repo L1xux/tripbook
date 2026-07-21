@@ -1,12 +1,13 @@
 """사진 업로드/수정/정렬 라우터. / main.py가 등록. / imaging, ai.analysis 호출."""
+import os
 from pathlib import Path
-from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db, get_or_404
-from app.models import Photo
+from app.models import Photo, Project
 from app.imaging import save_resized, small_path
 from app.routers.projects import get_project_or_404
 from app.schemas import PhotoOut
@@ -82,12 +83,45 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
     photo = get_or_404(db, Photo, photo_id, "moment")
     base = Path(get_settings().data_dir) / "audio" / photo.project_id
     base.mkdir(parents=True, exist_ok=True)
-    dest = base / f"{photo.id}.m4a"
+    # 업로드 확장자를 보존한다 — Whisper가 파일명 확장자로 포맷을 판별하므로 webm을 .m4a로 저장하면 전사가 틀어진다
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in (".webm", ".m4a", ".mp4", ".ogg", ".wav", ".mp3"):
+        ext = ".m4a"
+    dest = base / f"{photo.id}{ext}"
     dest.write_bytes(file.file.read())
     photo.audio_path = str(dest)
     db.commit()
     background.add_task(caption.transcribe_and_caption, photo.id)
     return {"id": photo.id, "transcript_pending": True}
+
+
+def _audio_media_type(path: str) -> str:
+    with open(path, "rb") as f:
+        head = f.read(12)
+    if head[:4] == b"\x1a\x45\xdf\xa3":   # EBML → webm/matroska
+        return "audio/webm"
+    if head[4:8] == b"ftyp":              # ISO-BMFF → m4a/mp4
+        return "audio/mp4"
+    return "application/octet-stream"
+
+
+@router.get("/moments/{photo_id}")
+def get_moment(photo_id: str, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    project = db.get(Project, photo.project_id)
+    return {
+        "id": photo.id, "caption": photo.caption, "transcript": photo.transcript,
+        "emotion": photo.emotion, "project_title": project.title if project else "",
+        "has_audio": bool(photo.audio_path),
+    }
+
+
+@router.get("/moments/{photo_id}/audio")
+def moment_audio(photo_id: str, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    if not photo.audio_path or not os.path.exists(photo.audio_path):
+        raise HTTPException(404, "no audio")
+    return FileResponse(photo.audio_path, media_type=_audio_media_type(photo.audio_path))
 
 
 @router.patch("/moments/{photo_id}")

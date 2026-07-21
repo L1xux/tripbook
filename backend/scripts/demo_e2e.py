@@ -32,10 +32,11 @@ def main(order: bool):
     for x in c.get(f"{BASE}/projects/{pid}/photos/analysis").json()["photos"]:
         print("  캡션:", x["caption"])
     if order:
-        c.post(f"{BASE}/projects/{pid}/recipients", json={"name": "엄마", "address": "서울"})
+        c.post(f"{BASE}/projects/{pid}/recipients", json={"name": "엄마", "address": "서울시 강남구 1", "phone": "010-1111-2222", "postal_code": "06000"})
         res = c.post(f"{BASE}/projects/{pid}/order", json={
-            "spec": {"bookSpecUid": "REPLACE_ME"},
-            "shipping": {"name": "나", "phone": "010-0000-0000", "address": "부산"}})
+            "spec": {"bookSpecUid": "SQUAREBOOK_HC",
+                     "coverTemplateUid": "79yjMH3qRPly", "contentTemplateUid": "2mi1ao0Z4Vxl"},
+            "shipping": {"name": "나", "phone": "010-0000-0000", "address": "부산시 해운대구 1", "postalCode": "48058"}})
         print("order:", res.json())
     print("완료:", f"http://localhost:5173/ (프로젝트 {pid})")
 

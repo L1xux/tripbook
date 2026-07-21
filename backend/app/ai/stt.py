@@ -11,5 +11,8 @@ def get_stt_client() -> openai.OpenAI:
 
 def transcribe(audio_path: str) -> str:
     with open(audio_path, "rb") as f:
-        res = get_stt_client().audio.transcriptions.create(model="whisper-1", file=f)
+        res = get_stt_client().audio.transcriptions.create(
+            model="whisper-1", file=f, language="ko",
+            prompt="여행 중 남긴 짧은 한국어 음성 메모",
+        )
     return res.text.strip()
