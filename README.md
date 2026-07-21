@@ -6,6 +6,16 @@
 캡션(글귀)으로 담고 — 지어내지 않습니다 — Sweetbook Book Print API로 실물 책을
 나 자신과 **선물 수령인**에게 주문하는 **모바일 퍼스트 웹 서비스**입니다.
 
+## ✨ 시그니처 — "종이책을 펼치면, 그때 내 목소리가 흘러나온다"
+
+- **진짜 목소리가 실물 책에 산다.** 순간마다 인쇄면에 **QR**을 넣어, 스캔하면 공개 페이지 `/v/:id`에서
+  **그때의 목소리가 재생**된다. 앱 카드에서도 탭하면 내 녹음이 재생되고, 파형은 **Web Audio로 실제 진폭을
+  디코드**한 진짜 파형이다(장식용 아님).
+- **AI는 증폭하되 창작하지 않는다.** Whisper 전사 → Haiku가 *말투 그대로* 캡션 편집(`NO_INVENTION`),
+  사진 감정 후보 제안(✨ 추천 칩), 캡션만으로 여행 **감정 아크** 요약 — 전부 사용자의 말에서만.
+- **여행 중 계속 담고**(사진+녹음+감정), 다 훑은 뒤 **책으로 만들기 → 주문·선물**로 자연스럽게 잇는다.
+- 벤치마크: Remento(목소리 QR 하드커버). 우리는 같은 훅을 **여행 세그먼트**로 가져왔다.
+
 > 스크린샷 / 파트너 포털 주문 캡처: Sandbox 실검증 후 추가 예정
 > (`docs/SWEETBOOK_API_FEEDBACK.md`의 "다음 할 일" 참고)
 
@@ -17,10 +27,12 @@
         │ fetch (SSE 없음)
         ▼
 [FastAPI + SQLite]
-  photos.py ──BackgroundTasks──▶ analysis.py ──▶ Claude Haiku 4.5 (사진 감정 제안)
-  photos.py(음성 업로드) ──▶ stt.py ──▶ OpenAI Whisper(whisper-1) 전사
+  photos.py ──BackgroundTasks──▶ analysis.py ──▶ Claude Haiku 4.5 (사진 감정 제안 → ✨ 추천 칩)
+  photos.py(음성 업로드) ──▶ stt.py ──▶ OpenAI Whisper(whisper-1, ko) 전사
                               └─▶ caption.py ──▶ Claude Haiku 4.5 (원문 충실 캡션 편집, NO_INVENTION)
-  orders.py ──▶ sweetbook/renderer.py ──▶ Sweetbook API (create→cover→contents→finalize→order×수령인)
+  photos.py ──▶ GET /moments/{id}/audio (오디오 서빙) · GET /moments/{id} (공개 조회) ──▶ /v/:id 재생 페이지
+  projects.py ──▶ arc.py ──▶ Claude Haiku 4.5 (여행 감정 아크 요약, 캡션 기반)
+  orders.py ──▶ sweetbook/renderer.py ──▶ Sweetbook API (create→cover→contents+QR밴드→finalize→order×수령인)
         ◀── webhook (주문 상태 갱신)
 ```
 
