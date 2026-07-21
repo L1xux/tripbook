@@ -44,7 +44,7 @@ export const patchMoment = (momentId: string, b: Partial<Pick<Moment, "emotion" 
   req(`/api/v1/moments/${momentId}`, { method: "PATCH", body: JSON.stringify(b) });
 export const reorderMoments = (id: string, photo_ids: string[]) =>
   req(`/api/v1/projects/${id}/photos/order`, { method: "PATCH", body: JSON.stringify({ photo_ids }) });
-export const addRecipient = (id: string, b: { name: string; address: string; phone?: string; gift_message?: string }) =>
+export const addRecipient = (id: string, b: { name: string; address: string; phone?: string; postal_code?: string; gift_message?: string }) =>
   req<{ id: string }>(`/api/v1/projects/${id}/recipients`, { method: "POST", body: JSON.stringify(b) });
 export const removeRecipient = (rid: string) => req(`/api/v1/recipients/${rid}`, { method: "DELETE" });
 export const createOrder = (id: string, spec: object, shipping: object) =>

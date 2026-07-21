@@ -9,9 +9,9 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
     )
-    init_db()
-
+    # 라우터가 models를 import해 Base.metadata에 테이블을 등록한다 → 그 다음에 create_all
     from app.routers import projects, photos, orders
+    init_db()
     app.include_router(projects.router)
     app.include_router(photos.router)
     app.include_router(orders.router)

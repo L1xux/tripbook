@@ -23,6 +23,7 @@ class RecipientBody(BaseModel):
     name: str
     address: str
     phone: str | None = None
+    postal_code: str | None = None
     gift_message: str | None = None
 
 
@@ -78,7 +79,7 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
         orders.append({"to": body.shipping.get("name", "나"), "order_uid": me.get("orderUid")})
         # 수령인마다 1권
         for r in project.recipients:
-            o = client.create_order(_order_payload(book_uid, {"name": r.name, "address": r.address, "phone": r.phone}))
+            o = client.create_order(_order_payload(book_uid, {"name": r.name, "address": r.address, "phone": r.phone, "postalCode": r.postal_code}))
             r.sweetbook_order_id = o.get("orderUid"); r.order_status = "ORDERED"
             orders.append({"to": r.name, "order_uid": o.get("orderUid")})
     except SweetbookError:

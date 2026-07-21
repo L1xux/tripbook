@@ -53,6 +53,7 @@ class Recipient(Base):
     name: Mapped[str] = mapped_column(String)
     phone: Mapped[str | None] = mapped_column(String, nullable=True)
     address: Mapped[str] = mapped_column(String, default="")
+    postal_code: Mapped[str | None] = mapped_column(String, nullable=True)  # Sweetbook 주문 필수
     gift_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     sweetbook_order_id: Mapped[str | None] = mapped_column(String, nullable=True)
     order_status: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -27,6 +27,7 @@ class RecipientOut(BaseModel):
     name: str
     phone: str | None
     address: str
+    postal_code: str | None
     gift_message: str | None
     order_status: str | None
     model_config = {"from_attributes": True}
