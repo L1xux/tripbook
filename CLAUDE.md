@@ -1,13 +1,14 @@
 # Tripbook — 프로젝트 규칙 (Claude Code용)
 
-여행 사진+메모를 AI가 여행기로 집필하고 Sweetbook Book Print API로 실물 책을 주문하는
-모바일 퍼스트 웹 서비스.
+여행 사진+목소리를 AI가 캡션으로 다듬어 "순간"을 담고, Sweetbook Book Print API로
+실물 책을 나 자신과 선물 수령인에게 주문하는 모바일 퍼스트 웹 서비스.
 
 ## 스택
 
-- **백엔드**: Python 3.11+, FastAPI, SQLAlchemy 2.0, SQLite, anthropic SDK, httpx, Pillow, pytest
-- **프론트엔드**: React 19 + TypeScript + Vite, react-router-dom, vitest
-- **외부 API**: Claude(Haiku 4.5 사진 분석, Opus 4.8 집필/재생성), Sweetbook Book Print(TEMPLATE 방식)
+- **백엔드**: Python 3.11+, FastAPI, SQLAlchemy 2.0, SQLite, anthropic SDK, openai SDK, httpx, Pillow, pytest
+- **프론트엔드**: React 19 + TypeScript + Vite, react-router-dom, vitest (v2 프론트는 별도 계획(Plan B))
+- **외부 API**: Claude(Haiku 4.5 — 사진 감정 제안 + 캡션 편집), OpenAI Whisper(`whisper-1` — 음성 전사),
+  Sweetbook Book Print(TEMPLATE 방식)
 
 ## 테스트 / 빌드 명령
 
@@ -20,9 +21,9 @@ cd backend;  python scripts/demo_e2e.py [--order]  # 로컬 E2E(uvicorn 실행 +
 
 ## 모델 제약
 
-- 사진 분석 `claude-haiku-4-5`, 집필/재생성 `claude-opus-4-8`(thinking adaptive).
+- 캡션 편집·감정 제안 `claude-haiku-4-5`, 음성 전사 Whisper `whisper-1`.
 - `budget_tokens` / `temperature`는 쓰지 말 것(400 오류).
-- API 키는 `.env`로만: `ANTHROPIC_API_KEY`, `SWEETBOOK_API_KEY`, `SWEETBOOK_ENV=sandbox|live`.
+- API 키는 `.env`로만: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `SWEETBOOK_API_KEY`, `SWEETBOOK_ENV=sandbox|live`.
   리포에는 `.env.example`만 커밋.
 
 ## 코드 규칙
@@ -30,8 +31,9 @@ cd backend;  python scripts/demo_e2e.py [--order]  # 로컬 E2E(uvicorn 실행 +
 - 모든 주요 모듈 상단에 3줄 docstring(한국어): "이 파일이 하는 일 / 누가 호출하는가 / 무엇을 호출하는가".
 - 자명하지 않은 결정에만 "왜" 주석.
 - 새 파일을 만들면 `docs/CODE_TOUR.md`에 1줄(역할 + "여기서 볼 것" 포인터) 추가.
-- 무드 5종 enum: `family_essay | friendship_saga | fantasy_adventure | lyrical_essay | comedy`.
-- 페이지 텍스트 250~400자. 모든 사진은 순서대로 정확히 1페이지. 창작 페이지는 photo 없음.
+- **캡션 불변식(창작 금지)**: 음성 캡션은 사용자가 말한 원문을 다듬을 뿐 새 사실·감정·인물·장소를
+  추가하지 않는다(`app/ai/caption.py:NO_INVENTION`). 편집이 실패하면 전사 원문을 그대로 캡션으로 보존한다
+  (침묵하거나 지어내지 않는다).
 
 ## 커밋 컨벤션
 
