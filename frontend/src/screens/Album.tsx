@@ -7,13 +7,14 @@ import { getProject, generateArc, photoImageUrl, type Project } from "../api";
 import MomentCard from "../components/MomentCard";
 import BookPreview from "../components/BookPreview";
 import OrderSheet from "../components/OrderSheet";
+import OrderStatus from "../components/OrderStatus";
 
 export default function Album() {
   const { id = "" } = useParams();
   const nav = useNavigate();
   const [p, setP] = useState<Project | null>(null);
   const [idx, setIdx] = useState(0);
-  const [view, setView] = useState<"deck" | "grid" | "book" | "order">("deck");
+  const [view, setView] = useState<"deck" | "grid" | "book" | "order" | "status">("deck");
   const [arcBusy, setArcBusy] = useState(false);
 
   useEffect(() => { getProject(id).then(setP); }, [id]);
@@ -50,7 +51,13 @@ export default function Album() {
   if (view === "order") return (
     <div className="album-screen light">
       <div className="bar dark"><span onClick={() => setView("book")}>‹ 주문</span></div>
-      <OrderSheet project={p} />
+      <OrderSheet project={p} onViewStatus={() => { getProject(id).then(setP); setView("status"); }} />
+    </div>
+  );
+  if (view === "status") return (
+    <div className="album-screen light">
+      <div className="bar dark"><span onClick={() => setView("deck")}>‹ {p.title}</span></div>
+      <OrderStatus projectId={id} />
     </div>
   );
 
@@ -73,6 +80,7 @@ export default function Album() {
               ? <p className="arc">“{p.emotion_arc}”</p>
               : <p>여기까지가 이 여행이에요. 이대로 한 권의 책이 되면, 언제든 다시 펼쳐볼 수 있어요.</p>}
             <button className="btn" onClick={() => setView("book")}>책으로 만들기</button>
+            {p.order_status && <button className="btn-ghost" onClick={() => setView("status")}>주문 현황 보기</button>}
             {!p.emotion_arc && M.length > 0 && (
               <button className="btn-ghost" onClick={makeArc} disabled={arcBusy}>{arcBusy ? "요약하는 중…" : "✨ 이 여행 감정 요약"}</button>
             )}

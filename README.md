@@ -58,6 +58,19 @@ npm install
 npm run dev   # http://localhost:5173
 ```
 
+### 로컬에서 바로 눌러보기 (데모 여행 시드)
+
+백엔드·프론트를 띄운 뒤, 사진·글귀·감정·재생 가능한 음성·감정 아크·주문 현황이 다 채워진
+데모 여행을 만들어 전 화면을 눌러볼 수 있다(AI/실키 불필요):
+
+```bash
+cd backend; python scripts/seed_demo.py
+# 출력된 URL을 브라우저에서 연다:
+#   앨범:      http://localhost:5173/p/<id>     (덱·글귀·파형·그리드·책·주문현황)
+#   순간 담기:  http://localhost:5173/p/<id>/add
+#   공개 재생:  http://localhost:5173/v/<moment-id>   (인쇄 QR 목적지)
+```
+
 > 주문을 실제로 걸려면 `frontend/src/components/OrderSheet.tsx`의 `BOOK_SPEC`에 있는
 > `REPLACE_ME` 3개(bookSpec/cover/content template uid)를 Sweetbook Sandbox 포털 값으로 교체하세요.
 
