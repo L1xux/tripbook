@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Library from "./screens/Library";
 import NewTrip from "./screens/NewTrip";
 import Album from "./screens/Album";
+import AddMoments from "./screens/AddMoments";
 import Voice from "./screens/Voice";
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/" element={<Library />} />
           <Route path="/new" element={<NewTrip />} />
           <Route path="/p/:id" element={<Album />} />
+          <Route path="/p/:id/add" element={<AddMoments />} />
           <Route path="/v/:id" element={<Voice />} />
         </Routes>
       </div>
