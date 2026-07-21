@@ -1,6 +1,6 @@
 """여행 감정 요약(감정 아크). / projects 라우터가 호출. / llm(Haiku) 사용.
 사용자 캡션(자기 말)만으로 여행 전체 감정의 흐름을 짧게 요약한다 — 창작 금지."""
-from app.ai.llm import ANALYSIS_MODEL, first_text, get_client
+from app.ai.oai import CHAT_MODEL, get_oai_client
 
 NO_INVENTION = "캡션에 없는 사실·장소·인물·감정을 새로 지어내지 않는다"
 
@@ -19,8 +19,8 @@ def build_arc_prompt(moments: list[tuple[str | None, str | None]]) -> str:
 def generate_arc(moments: list[tuple[str | None, str | None]]) -> str | None:
     if not any(c for _, c in moments):
         return None  # 글귀가 하나도 없으면 요약할 것이 없다 (지어내지 않는다)
-    res = get_client().messages.create(
-        model=ANALYSIS_MODEL, max_tokens=400,
+    res = get_oai_client().chat.completions.create(
+        model=CHAT_MODEL,
         messages=[{"role": "user", "content": build_arc_prompt(moments)}],
     )
-    return first_text(res).strip()
+    return (res.choices[0].message.content or "").strip()

@@ -7,8 +7,8 @@
 
 - **백엔드**: Python 3.11+, FastAPI, SQLAlchemy 2.0, SQLite, anthropic SDK, openai SDK, httpx, Pillow, pytest
 - **프론트엔드**: React 19 + TypeScript + Vite, react-router-dom, vitest (v2 프론트는 별도 계획(Plan B))
-- **외부 API**: Claude(Haiku 4.5 — 사진 감정 제안 + 캡션 편집), OpenAI Whisper(`whisper-1` — 음성 전사),
-  Sweetbook Book Print(TEMPLATE 방식)
+- **외부 API**: OpenAI(`gpt-4o-mini` — 사진 감정 제안 + 캡션 편집 + 감정 아크, Whisper `whisper-1` — 음성 전사),
+  Sweetbook Book Print(TEMPLATE 방식). (anthropic SDK는 남아 있으나 현재 미사용 — LLM은 OpenAI로 통일.)
 
 ## 테스트 / 빌드 명령
 
@@ -21,8 +21,8 @@ cd backend;  python scripts/demo_e2e.py [--order]  # 로컬 E2E(uvicorn 실행 +
 
 ## 모델 제약
 
-- 캡션 편집·감정 제안 `claude-haiku-4-5`, 음성 전사 Whisper `whisper-1`.
-- `budget_tokens` / `temperature`는 쓰지 말 것(400 오류).
+- 캡션 편집·감정 제안·감정 아크 `gpt-4o-mini`(OpenAI), 음성 전사 Whisper `whisper-1`.
+- 비전 감정 제안은 `response_format` json_schema(strict)로 `{scene, suggested_emotion}` 강제.
 - API 키는 `.env`로만: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `SWEETBOOK_API_KEY`, `SWEETBOOK_ENV=sandbox|live`.
   리포에는 `.env.example`만 커밋.
 

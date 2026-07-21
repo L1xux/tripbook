@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import app.db as db_module
 from app.models import Photo
 from app.imaging import small_path
-from app.ai.llm import ANALYSIS_MODEL, first_text, get_client
+from app.ai.oai import CHAT_MODEL, get_oai_client
 
 EMOTIONS = ["설렘", "행복", "평온", "뭉클", "신남", "아쉬움"]
 
@@ -24,15 +24,15 @@ def analyze_image(image_path: str) -> dict:
     # 분석은 항상 리사이즈본(_small.jpg)을 사용한다. 원본은 인쇄용.
     with open(small_path(image_path), "rb") as f:
         data = base64.standard_b64encode(f.read()).decode()
-    res = get_client().messages.create(
-        model=ANALYSIS_MODEL, max_tokens=512,
-        output_config={"format": {"type": "json_schema", "schema": ANALYSIS_SCHEMA}},
+    res = get_oai_client().chat.completions.create(
+        model=CHAT_MODEL,
+        response_format={"type": "json_schema", "json_schema": {"name": "emotion_pick", "strict": True, "schema": ANALYSIS_SCHEMA}},
         messages=[{"role": "user", "content": [
-            {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}},
             {"type": "text", "text": "이 여행 사진의 장면과 어울리는 감정 하나를 골라줘."},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{data}"}},
         ]}],
     )
-    return json.loads(first_text(res))
+    return json.loads(res.choices[0].message.content)
 
 
 def analyze_and_save(photo_id: str) -> None:
