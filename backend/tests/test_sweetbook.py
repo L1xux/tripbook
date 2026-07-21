@@ -33,11 +33,10 @@ def test_renderer_calls_full_sequence():
         return httpx.Response(200, json={"success": True, "message": "ok",
                                          "data": {"bookUid": "B1", "orderUid": "O1"}})
     from app.sweetbook.renderer import TemplateRenderer
-    from app.ai.parser import ParsedPage
 
     class P:  # 최소 프로젝트 스텁
         title = "t"; id = "p1"
-    pages = [type("Pg", (), {"photo_id": None, "text": "글", "page_number": 1})()]
+    pages = [type("Pg", (), {"id": "m1", "photo_id": None, "caption": "글", "page_number": 1})()]
     uid = TemplateRenderer(make_client(handler)).render(P(), pages, {"bookSpecUid": "S1"})
     assert uid == "B1"
     assert [p for _, p in calls] == [

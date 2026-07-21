@@ -9,15 +9,14 @@ class BookRenderer(Protocol):
 
 
 def build_cover_payload(project, spec: dict) -> dict:
-    # 주의: 실제 템플릿 파라미터 스키마는 hello_book.py로 Sandbox에서 확정 후 조정
-    return {"templateUid": spec.get("coverTemplateUid"), "params": {"title": project.title}}
+    return {"templateUid": spec.get("coverTemplateUid"),
+            "params": {"title": project.title, "coverLine": getattr(project, "cover_line", None)}}
 
 
-def build_content_payload(page, spec: dict) -> dict:
-    return {
-        "templateUid": spec.get("contentTemplateUid"),
-        "params": {"text": page.text, "photoId": page.photo_id},
-    }
+def build_content_payload(moment, spec: dict) -> dict:
+    # 한 순간 = 한 페이지: 사진 + 캡션(사용자의 말)
+    return {"templateUid": spec.get("contentTemplateUid"),
+            "params": {"photoId": getattr(moment, "id", None), "caption": getattr(moment, "caption", None) or ""}}
 
 
 class TemplateRenderer:
