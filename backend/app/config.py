@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     anthropic_api_key: str = ""
+    openai_api_key: str = ""
     sweetbook_api_key: str = ""
     sweetbook_env: str = "sandbox"  # sandbox | live
     data_dir: str = "data"

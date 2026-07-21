@@ -11,6 +11,7 @@ from app.imaging import save_resized, small_path
 from app.routers.projects import get_project_or_404
 from app.schemas import PhotoOut
 import app.ai.analysis as analysis
+import app.ai.caption as caption
 
 router = APIRouter(prefix="/api/v1", tags=["photos"])
 
@@ -73,6 +74,19 @@ def photo_image(photo_id: str, db: Session = Depends(get_db)):
     """UI 썸네일용 이미지. 리사이즈본을 우선 서빙한다(원본은 인쇄용이라 무거움)."""
     photo = get_or_404(db, Photo, photo_id, "photo")
     return FileResponse(small_path(photo.file_path), media_type="image/jpeg")
+
+
+@router.post("/moments/{photo_id}/audio", status_code=202)
+def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    base = Path(get_settings().data_dir) / "audio" / photo.project_id
+    base.mkdir(parents=True, exist_ok=True)
+    dest = base / f"{photo.id}.m4a"
+    dest.write_bytes(file.file.read())
+    photo.audio_path = str(dest)
+    db.commit()
+    background.add_task(caption.transcribe_and_caption, photo.id)
+    return {"id": photo.id, "transcript_pending": True}
 
 
 @router.patch("/photos/{photo_id}")
