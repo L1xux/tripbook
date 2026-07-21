@@ -1,4 +1,4 @@
-"""사진 비전 분석(Haiku 4.5). / photos 라우터가 백그라운드로 호출. / anthropic SDK 사용."""
+"""사진 비전 분석(OpenAI gpt-4o-mini, json_schema). / photos 라우터가 백그라운드로 호출. / openai SDK 사용."""
 import base64
 import json
 from concurrent.futures import ThreadPoolExecutor
