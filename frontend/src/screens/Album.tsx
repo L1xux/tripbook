@@ -1,9 +1,9 @@
 /** 앨범: 카드 덱(스와이프) ⇄ ▦ 전체 그리드. 덱 끝엔 "책으로 만들기" 카드(Task 5).
  *  누가 호출: App 라우터(/p/:id).
  *  무엇을 호출: api(getProject/photoImageUrl), components/MomentCard. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getProject, generateArc, photoImageUrl, type Project } from "../api";
+import { getProject, generateArc, reorderMoments, photoImageUrl, type Project } from "../api";
 import MomentCard from "../components/MomentCard";
 import BookPreview from "../components/BookPreview";
 import OrderSheet from "../components/OrderSheet";
@@ -16,6 +16,10 @@ export default function Album() {
   const [idx, setIdx] = useState(0);
   const [view, setView] = useState<"deck" | "grid" | "book" | "order" | "status">("deck");
   const [arcBusy, setArcBusy] = useState(false);
+  const [reorder, setReorder] = useState(false);
+  const [pick, setPick] = useState<number | null>(null);
+  const drag = useRef<number | null>(null);
+  const swiped = useRef(false);
 
   useEffect(() => { getProject(id).then(setP); }, [id]);
 
@@ -29,14 +33,30 @@ export default function Album() {
   const M = p.photos;
   const stamp = (i: number) => `${(p.title || "TRIP").toUpperCase().slice(0, 6)} · ${String(i + 1).padStart(2, "0")}`;
   const atEnd = idx >= M.length;
+  const goPrev = () => setIdx((i) => Math.max(0, i - 1));
+  const goNext = () => setIdx((i) => Math.min(M.length, i + 1));
+  const doMove = (from: number, to: number) => {
+    const arr = [...M]; const [it] = arr.splice(from, 1); arr.splice(to, 0, it);
+    setP((prev) => prev ? { ...prev, photos: arr } : prev);
+    reorderMoments(id, arr.map((x) => x.id));
+  };
 
   if (view === "grid") return (
     <div className="album-screen light">
-      <div className="bar dark"><span onClick={() => setView("deck")}>‹ {p.title}</span><span className="ic on" onClick={() => setView("deck")}>▦</span></div>
+      <div className="bar dark">
+        <span onClick={() => setView("deck")}>‹ {p.title}</span>
+        <span className="ic" style={{ fontSize: 13, color: reorder ? "var(--stamp)" : "var(--ink)" }}
+          onClick={() => { setReorder((r) => !r); setPick(null); }}>{reorder ? "완료" : "순서 편집"}</span>
+      </div>
+      {reorder && <p className="reorder-hint">옮길 순간을 탭하고, 놓을 자리를 탭하세요</p>}
       <div className="gwrap">
         {M.map((m, i) => (
-          <button key={m.id} className="cell" style={{ backgroundImage: `url(${photoImageUrl(m.id)})` }}
-            onClick={() => { setIdx(i); setView("deck"); }} />
+          <button key={m.id} className={"cell" + (pick === i ? " picked" : "")} style={{ backgroundImage: `url(${photoImageUrl(m.id)})` }}
+            onClick={() => {
+              if (!reorder) { setIdx(i); setView("deck"); return; }
+              if (pick === null) setPick(i);
+              else { if (pick !== i) doMove(pick, i); setPick(null); }
+            }} />
         ))}
       </div>
     </div>
@@ -71,7 +91,11 @@ export default function Album() {
         </span>
       </div>
       {!atEnd && <span className="counter">{String(idx + 1).padStart(2, "0")} / {String(M.length).padStart(2, "0")}</span>}
-      <div className="deck">
+      <div className="deck"
+        onPointerDown={(e) => { drag.current = e.clientX; swiped.current = false; }}
+        onPointerMove={(e) => { if (drag.current !== null && Math.abs(e.clientX - drag.current) > 12) swiped.current = true; }}
+        onPointerUp={(e) => { const d = drag.current; drag.current = null; if (d !== null) { const dx = e.clientX - d; if (Math.abs(dx) > 50) (dx < 0 ? goNext() : goPrev()); } }}
+        onClickCapture={(e) => { if (swiped.current) { e.stopPropagation(); swiped.current = false; } }}>
         {atEnd ? (
           <div className="endcard">
             <div className="kick">{(p.title || "").toUpperCase()}</div>
@@ -92,8 +116,8 @@ export default function Album() {
       </div>
       {!atEnd && (
         <>
-          <span className="nav prev" onClick={() => setIdx((i) => Math.max(0, i - 1))}>‹</span>
-          <span className="nav next" onClick={() => setIdx((i) => Math.min(M.length, i + 1))}>›</span>
+          <span className="nav prev" onClick={goPrev}>‹</span>
+          <span className="nav next" onClick={goNext}>›</span>
           <div className="dots">{M.map((_, i) => <i key={i} className={i === idx ? "on" : ""} />)}</div>
         </>
       )}

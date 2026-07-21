@@ -12,6 +12,8 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   const [moments, setMoments] = useState<Moment[]>(initialMoments);
   const [error, setError] = useState("");
   const [camOpen, setCamOpen] = useState(false);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   // 사진 업로드 후 Haiku 비전이 감정 후보(suggested_emotion)를 채우면 화면에 반영한다(짧게 폴링)
@@ -58,6 +60,16 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
     setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, emotion: e } : x));
   };
 
+  const startEdit = (m: Moment) => { setEditing(m.id); setDraft(m.caption ?? ""); };
+  const saveEdit = (m: Moment) => {
+    const v = draft.trim();
+    setEditing(null);
+    if (v && v !== m.caption) {
+      patchMoment(m.id, { caption: v });
+      setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, caption: v } : x));
+    }
+  };
+
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
@@ -72,8 +84,14 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
           <img className="capture-thumb" src={photoImageUrl(m.id)} alt="" />
           <div style={{ flex: 1, minWidth: 0 }}>
             <Recorder onRecorded={(b) => onAudio(m, b)} />
-            {m.analysis_status === "done" && m.caption && <p className="capture-cap">“{m.caption}”</p>}
-            {m.analysis_status === "pending" && m.caption == null && <p className="capture-cap muted">녹음하면 여기에 글귀가 생겨요</p>}
+            {editing === m.id ? (
+              <textarea className="cap-edit" value={draft} autoFocus
+                onChange={(e) => setDraft(e.target.value)} onBlur={() => saveEdit(m)} />
+            ) : m.analysis_status === "done" && m.caption ? (
+              <p className="capture-cap" onClick={() => startEdit(m)} title="탭해서 수정">“{m.caption}”</p>
+            ) : m.analysis_status === "pending" && m.caption == null ? (
+              <p className="capture-cap muted">녹음하면 여기에 글귀가 생겨요</p>
+            ) : null}
             {!m.emotion && m.suggested_emotion && <p className="ai-hint">✨ AI가 이 순간을 “{m.suggested_emotion}”으로 봤어요 — 탭해서 선택</p>}
             <div className="emotions">
               {EMOTIONS.map((e) => {

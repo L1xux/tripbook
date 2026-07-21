@@ -62,15 +62,3 @@ class Recipient(Base):
     gift_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     sweetbook_order_id: Mapped[str | None] = mapped_column(String, nullable=True)
     order_status: Mapped[str | None] = mapped_column(String, nullable=True)
-
-
-class Page(Base):
-    """(v1 레거시) 집필 페이지 — 향후 제거. / writer.py가 아직 import하므로 스텁으로 유지."""
-    __tablename__ = "pages"
-    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uid)
-    project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
-    page_number: Mapped[int] = mapped_column(Integer)
-    photo_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    text: Mapped[str] = mapped_column(Text)
-    ai_text: Mapped[str] = mapped_column(Text)
-    regen_count: Mapped[int] = mapped_column(Integer, default=0)
