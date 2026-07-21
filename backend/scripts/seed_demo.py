@@ -53,6 +53,8 @@ def main():
     adir = f"data/audio/{pid}"; os.makedirs(adir, exist_ok=True)
     wav = os.path.abspath(f"{adir}/{photos[0]['id']}.wav"); _make_wav(wav)
     with db_module.SessionLocal() as db:
+        for m in photos:  # 캡션이 캡처 화면에서도 보이도록 분석 완료 상태로
+            db.get(Photo, m["id"]).analysis_status = "done"
         ph = db.get(Photo, photos[0]["id"])
         ph.audio_path = wav; ph.transcript = SCENES[0][3].replace("\n", " ")
         pr = db.get(Project, pid)
