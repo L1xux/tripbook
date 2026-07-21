@@ -11,11 +11,9 @@ def create_app() -> FastAPI:
     )
     init_db()
 
-    from app.routers import projects, photos, writing, pages, orders
+    from app.routers import projects, photos, orders
     app.include_router(projects.router)
     app.include_router(photos.router)
-    app.include_router(writing.router)
-    app.include_router(pages.router)
     app.include_router(orders.router)
 
     @app.get("/api/v1/health")
