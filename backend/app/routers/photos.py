@@ -16,10 +16,10 @@ import app.ai.caption as caption
 router = APIRouter(prefix="/api/v1", tags=["photos"])
 
 
-class PhotoPatch(BaseModel):
-    note: str | None = None
+class MomentPatch(BaseModel):
     emotion: str | None = None
-    user_scene_correction: str | None = None
+    note: str | None = None
+    caption: str | None = None
 
 
 class OrderBody(BaseModel):
@@ -64,7 +64,8 @@ def upload_photos(
 def analysis_status(project_id: str, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
     return {"photos": [
-        {"id": p.id, "analysis_status": p.analysis_status, "scene": p.scene}
+        {"id": p.id, "analysis_status": p.analysis_status,
+         "suggested_emotion": p.suggested_emotion, "caption": p.caption, "transcript": p.transcript}
         for p in project.photos
     ]}
 
@@ -89,9 +90,9 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
     return {"id": photo.id, "transcript_pending": True}
 
 
-@router.patch("/photos/{photo_id}")
-def patch_photo(photo_id: str, body: PhotoPatch, db: Session = Depends(get_db)):
-    photo = get_or_404(db, Photo, photo_id, "photo")
+@router.patch("/moments/{photo_id}")
+def patch_moment(photo_id: str, body: MomentPatch, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(photo, k, v)
     db.commit()
