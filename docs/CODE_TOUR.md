@@ -30,17 +30,20 @@
 14. `backend/app/sweetbook/client.py` — Book Print API HTTP 클라이언트. **여기서 볼 것:** `{success, data, errors}` 언랩, transport 주입(테스트 모킹).
 15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** `build_content_payload`가 순간 1개(사진+캡션)를 페이지 1개로 매핑, payload 조립을 `build_*_payload`로 분리해 스키마 변경을 국소화.
 
-## 프론트엔드 (v1 상태 — 아직 v2 미마이그레이션)
+## 프론트엔드 (v2 — 음성 캡션 포토북 UI)
 
-> 프론트엔드는 이번 백엔드 v2 개편(음성 캡션 + 선물 다인수 주문) 대상에서 제외되어 있다.
-> 아래 목록은 여전히 v1 위자드(무드 선택 → 집필 SSE) 기준이며, `/write` 등 v1 전용 엔드포인트를 호출한다.
-> 프론트 v2(순간 담기 + 목소리 캡션 + 서재 UI)는 별도 계획(Plan B)에서 다룬다.
+> React 19 + Vite. 계정 없음 — 서재 목록은 localStorage에 프로젝트 id만 보관.
+> 화면 흐름: 서재(홈) → 카드 덱 ⇄ 그리드 → 순간(글귀+음성 파형) → 책 펼침면 → 주문·선물.
+> 비주얼은 확정 목업 `.superpowers/brainstorm/*/content/design-v1.html`(필름/Retro)을 단일 기준으로 옮긴 것.
 
-16. `frontend/src/api.ts` — 백엔드 API 클라이언트. **여기서 볼 것:** 모든 컴포넌트는 이 파일로만 서버와 통신, 에러 detail을 사용자 메시지로 변환.
-17. `frontend/src/utils.ts` — 공용 유틸(patchById). **여기서 볼 것:** Step2/Step4의 리스트 패치가 이 하나를 공유.
-18. `frontend/src/App.tsx` — 라우터 + 위자드 5단계 연결.
-19. `frontend/src/steps/Step1Info.tsx` — 여행 정보 + 무드 선택.
-20. `frontend/src/steps/Step2Photos.tsx` — 사진 업로드 + 메모 + AI 장면 교정 + 순서 조정(분석 폴링).
-21. `frontend/src/steps/Step3Writing.tsx` — 실시간 집필 피드(EventSource SSE).
-22. `frontend/src/steps/Step4Review.tsx` — 퇴고(수정 + 재생성).
-23. `frontend/src/steps/Step5Order.tsx` — 배송 입력 + 주문 + 상태 폴링.
+16. `frontend/src/api.ts` — 백엔드 v2 API 클라이언트. **여기서 볼 것:** 모든 컴포넌트는 이 파일로만 서버와 통신, 타입 `Moment/Recipient/Project`, 에러 detail을 사용자 메시지로 변환.
+17. `frontend/src/lib/library.ts` — 계정 없는 "내 서재". **여기서 볼 것:** localStorage에 여행 id 목록만 보관(`listTrips/addTrip/removeTrip`).
+18. `frontend/src/App.tsx` — 라우터: `/`(서재) · `/new`(새 여행) · `/p/:id`(앨범). **여기서 볼 것:** 앨범 내부(덱/그리드/책/주문)는 라우트가 아니라 Album의 state로 전환.
+19. `frontend/src/screens/Library.tsx` — 홈 서재(책장 진열). **여기서 볼 것:** 없어진 여행 id를 서재에서 청소하는 로직.
+20. `frontend/src/screens/NewTrip.tsx` — 새 여행 + 순간 담기(사진 + 목소리 녹음 + 감정). **여기서 볼 것:** 캡션 폴링은 audio를 올린 순간에만 걸고 done/failed에서 종료(pending 고착 순간 무한로딩 금지).
+21. `frontend/src/screens/Album.tsx` — 앨범: 카드 덱 ⇄ 그리드 ⇄ 책 ⇄ 주문. **여기서 볼 것:** `view` state 하나로 4개 화면 전환, 덱 끝의 "책으로 만들기" 엔드카드.
+22. `frontend/src/components/Recorder.tsx` — 목소리 녹음 버튼(MediaRecorder). **여기서 볼 것:** 정지 시 Blob을 onRecorded로 넘기고 스트림 트랙 정리.
+23. `frontend/src/components/MomentCard.tsx` — 순간 카드(탭→글귀 시트). **여기서 볼 것:** 캡션 없으면 transcript로 폴백, 시그니처(글귀+파형+스탬프).
+24. `frontend/src/components/Waveform.tsx` — 앰버 음성 파형. **여기서 볼 것:** 오디오 분석 없이 순간 index 시드로 결정적 막대 생성.
+25. `frontend/src/components/BookPreview.tsx` — 책 펼침면 미리보기(사진|명조 캡션). **여기서 볼 것:** "이대로 인쇄된다"는 신뢰를 주는 spread 레이아웃.
+26. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 동행자 선물 토글 시 합계 2배, `BOOK_SPEC`의 `REPLACE_ME`(Sweetbook Sandbox 값으로 교체 필요).
