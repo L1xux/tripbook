@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db import get_db, get_or_404
-from app.models import Photo
+from app.models import Photo, Project
 from app.imaging import save_resized, small_path
 from app.routers.projects import get_project_or_404
 from app.schemas import PhotoOut
@@ -99,6 +99,17 @@ def _audio_media_type(path: str) -> str:
     if head[4:8] == b"ftyp":              # ISO-BMFF → m4a/mp4
         return "audio/mp4"
     return "application/octet-stream"
+
+
+@router.get("/moments/{photo_id}")
+def get_moment(photo_id: str, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    project = db.get(Project, photo.project_id)
+    return {
+        "id": photo.id, "caption": photo.caption, "transcript": photo.transcript,
+        "emotion": photo.emotion, "project_title": project.title if project else "",
+        "has_audio": bool(photo.audio_path),
+    }
 
 
 @router.get("/moments/{photo_id}/audio")
