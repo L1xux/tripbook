@@ -1,6 +1,7 @@
 """사진 업로드/수정/정렬 라우터. / main.py가 등록. / imaging, ai.analysis 호출."""
+import os
 from pathlib import Path
-from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -88,6 +89,24 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
     db.commit()
     background.add_task(caption.transcribe_and_caption, photo.id)
     return {"id": photo.id, "transcript_pending": True}
+
+
+def _audio_media_type(path: str) -> str:
+    with open(path, "rb") as f:
+        head = f.read(12)
+    if head[:4] == b"\x1a\x45\xdf\xa3":   # EBML → webm/matroska
+        return "audio/webm"
+    if head[4:8] == b"ftyp":              # ISO-BMFF → m4a/mp4
+        return "audio/mp4"
+    return "application/octet-stream"
+
+
+@router.get("/moments/{photo_id}/audio")
+def moment_audio(photo_id: str, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    if not photo.audio_path or not os.path.exists(photo.audio_path):
+        raise HTTPException(404, "no audio")
+    return FileResponse(photo.audio_path, media_type=_audio_media_type(photo.audio_path))
 
 
 @router.patch("/moments/{photo_id}")
