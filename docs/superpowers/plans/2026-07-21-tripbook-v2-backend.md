@@ -319,7 +319,16 @@ def transcribe(audio_path: str) -> str:
     return res.text.strip()
 ```
 
-- [ ] **Step 5: 음성 업로드 엔드포인트** — `backend/app/routers/photos.py`에 추가. 상단 import에 `import app.ai.caption as caption` 추가하고(파일 맨 위 import 블록), `photo_image` 함수 아래에 삽입:
+- [ ] **Step 5a: 캡션 모듈 스텁 생성** — Task 4에서 전체 구현하지만, 이 태스크의 업로드 엔드포인트와 테스트가 `app.ai.caption`을 import/monkeypatch하므로 먼저 스텁을 만든다. `backend/app/ai/caption.py`:
+```python
+"""음성 캡션 파이프라인(전사→충실한 편집). / 음성 업로드가 백그라운드로 호출. / stt·llm 사용. (Task 4에서 전체 구현)"""
+
+
+def transcribe_and_caption(photo_id: str) -> None:
+    return None
+```
+
+- [ ] **Step 5b: 음성 업로드 엔드포인트** — `backend/app/routers/photos.py`에 추가. 상단 import에 `import app.ai.caption as caption` 추가하고(파일 맨 위 import 블록), `photo_image` 함수 아래에 삽입:
 ```python
 @router.post("/moments/{photo_id}/audio", status_code=202)
 def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, db: Session = Depends(get_db)):
@@ -343,7 +352,8 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
 ### Task 4: 캡션 파이프라인 (충실한 편집, 창작 금지)
 
 **Files:**
-- Create: `backend/app/ai/caption.py`, `backend/tests/test_caption.py`
+- Modify: `backend/app/ai/caption.py` (Task 3의 스텁을 전체 구현으로 교체)
+- Create: `backend/tests/test_caption.py`
 
 **Interfaces:**
 - Consumes: `app.ai.stt.transcribe`, `app.ai.llm.get_client`/`first_text`, `Photo`, `SessionLocal`
@@ -609,7 +619,7 @@ def patch_moment(photo_id: str, body: MomentPatch, db: Session = Depends(get_db)
 책을 1회 렌더한 뒤 (나 + 수령인들) 각각에게 인쇄 주문을 생성한다.
 
 **Files:**
-- Modify: `backend/app/routers/orders.py` (전체 교체), `backend/tests/test_orders.py` (전체 교체)
+- Modify: `backend/app/routers/orders.py` (전체 교체), `backend/tests/test_orders.py` (전체 교체), `backend/app/sweetbook/renderer.py` (payload 함수 2개), `backend/tests/test_sweetbook.py` (가짜 페이지 객체)
 
 **Interfaces:**
 - Consumes: `SweetbookClient`, `TemplateRenderer`, `get_project_or_404`, `Recipient`
@@ -775,9 +785,26 @@ def webhook(body: WebhookBody, db: Session = Depends(get_db)):
     return {"ok": True}
 ```
 
+- [ ] **Step 3b: 렌더러를 순간(caption) 기반으로 갱신** — 렌더러는 삭제된 Page의 `.text`/`.photo_id`를 참조하므로 순간 필드로 바꿔야 한다. `backend/app/sweetbook/renderer.py`의 `build_cover_payload`·`build_content_payload` 교체:
+```python
+def build_cover_payload(project, spec: dict) -> dict:
+    return {"templateUid": spec.get("coverTemplateUid"),
+            "params": {"title": project.title, "coverLine": getattr(project, "cover_line", None)}}
+
+
+def build_content_payload(moment, spec: dict) -> dict:
+    # 한 순간 = 한 페이지: 사진 + 캡션(사용자의 말)
+    return {"templateUid": spec.get("contentTemplateUid"),
+            "params": {"photoId": getattr(moment, "id", None), "caption": getattr(moment, "caption", None) or ""}}
+```
+  그리고 `backend/tests/test_sweetbook.py`의 `test_renderer_calls_full_sequence` 안의 가짜 페이지 객체를 순간 형태로 바꾼다:
+```python
+    pages = [type("Pg", (), {"id": "m1", "photo_id": None, "caption": "글", "page_number": 1})()]
+```
+
 - [ ] **Step 4: 통과 확인** — `python -m pytest tests/ -v` → 전체 PASS
 
-- [ ] **Step 5: 커밋** — `git add -A; git commit -m "feat: recipients + gift multi-copy Sweetbook order"`
+- [ ] **Step 5: 커밋** — `git add -A; git commit -m "feat: recipients + gift multi-copy order, renderer uses moment captions"`
 
 ---
 
