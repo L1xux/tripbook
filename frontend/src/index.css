@@ -172,4 +172,12 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .receipt-row b{ font:400 13px/1 var(--mono); color:var(--stamp); letter-spacing:.02em; }
 .receipt-note{ font-size:13px; margin-top:14px; word-break:keep-all; }
 
+/* 공개 재생 페이지 /v/:id */
+.voice-page{ position:relative; min-height:100dvh; background:#100c08 center/cover no-repeat; }
+.voice-sheet{ position:absolute; left:0; right:0; bottom:0; padding:80px 24px 40px;
+  background:linear-gradient(transparent,rgba(10,6,3,.5) 30%,rgba(10,6,3,.94) 74%); }
+.voice-sheet .q{ color:#fff; font:400 21px/1.85 var(--serif); word-break:keep-all; white-space:pre-line; }
+.voice-empty{ min-height:100dvh; display:flex; align-items:center; justify-content:center;
+  color:var(--soft); font:400 15px/1.6 var(--sans); text-align:center; padding:24px; }
+
 :focus-visible{ outline:2px solid var(--stamp); outline-offset:2px; }
