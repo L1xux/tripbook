@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProject, photoImageUrl, type Project } from "../api";
 import MomentCard from "../components/MomentCard";
+import BookPreview from "../components/BookPreview";
+import OrderSheet from "../components/OrderSheet";
 
 export default function Album() {
   const { id = "" } = useParams();
@@ -32,8 +34,18 @@ export default function Album() {
     </div>
   );
 
-  // book/order 뷰는 Task 5에서 렌더. 여기선 자리만.
-  if (view === "book" || view === "order") return <div data-view={view} />;
+  if (view === "book") return (
+    <div className="album-screen light">
+      <div className="bar dark"><span onClick={() => setView("deck")}>‹ 미리보기</span></div>
+      <BookPreview project={p} onOrder={() => setView("order")} />
+    </div>
+  );
+  if (view === "order") return (
+    <div className="album-screen light">
+      <div className="bar dark"><span onClick={() => setView("book")}>‹ 주문</span></div>
+      <OrderSheet project={p} />
+    </div>
+  );
 
   return (
     <div className="album-screen dark">
