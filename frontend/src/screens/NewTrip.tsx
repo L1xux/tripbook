@@ -36,13 +36,13 @@ export default function NewTrip() {
   );
 
   return (
-    <div className="album-screen light">
-      <div className="bar dark">
-        <span onClick={() => nav("/")}>‹ 서재</span>
-        <span onClick={() => nav(`/p/${pid}`)}>앨범 →</span>
+    <div style={{ minHeight: "100dvh", paddingBottom: 40 }}>
+      <div className="cap-header">
+        <button className="backbtn" onClick={() => nav("/")} aria-label="서재로">←</button>
+        <h1 style={{ flex: 1 }}>{title}</h1>
+        <button className="btn-ghost" onClick={() => nav(`/p/${pid}`)}>앨범 →</button>
       </div>
-      <div style={{ padding: "62px 20px 40px" }}>
-        <h1 style={{ font: "800 22px/1.3 var(--sans)", letterSpacing: "-.02em" }}>{title}</h1>
+      <div style={{ padding: "0 20px" }}>
         <MomentCapture projectId={pid} initialMoments={[]} />
       </div>
     </div>

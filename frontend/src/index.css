@@ -53,6 +53,15 @@ input:focus{ outline:none; border-color:var(--stamp); }
   background:var(--ink); color:#fff; border:0; font:400 15px/1 var(--sans); cursor:pointer; z-index:4;
   display:flex; align-items:center; justify-content:center; padding:0; box-shadow:0 2px 6px rgba(0,0,0,.3); }
 
+/* ── 순간 담기 헤더(뒤로가기) ── */
+.cap-header{ display:flex; align-items:center; gap:12px; padding:22px 20px 14px; }
+.backbtn{ width:40px; height:40px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
+  color:var(--ink); font:400 19px/1 var(--sans); cursor:pointer; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(64,44,20,.06); }
+.backbtn:active{ transform:scale(.94); }
+.cap-header h1{ font:800 22px/1.15 var(--sans); letter-spacing:-.02em; }
+.cap-kick{ font:400 11px/1 var(--mono); color:var(--stamp); letter-spacing:.1em; margin-bottom:5px; }
+
 /* ── 순간 담기(NewTrip) ── */
 .capture-card{ position:relative; display:flex; gap:14px; background:var(--card); border-radius:16px; box-shadow:0 2px 10px rgba(64,44,20,.08);
   padding:14px; margin:14px 0; }
