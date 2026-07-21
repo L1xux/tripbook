@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listTrips, removeTrip } from "../lib/library";
-import { getProject, photoImageUrl, type Project } from "../api";
+import { getProject, deleteProject, photoImageUrl, type Project } from "../api";
 
 export default function Library() {
   const nav = useNavigate();
@@ -30,10 +30,20 @@ export default function Library() {
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 13 }}>
         {trips.map((p) => (
-          <button key={p.id} className="book" onClick={() => nav(`/p/${p.id}`)}
-            style={cover(p) ? { backgroundImage: `url(${cover(p)})` } : { background: "#d9d2c5" }}>
-            <span className="book-cap"><b>{p.title}</b><span>{p.photos.length} 순간</span></span>
-          </button>
+          <div key={p.id} className="book-wrap">
+            <button className="book" onClick={() => nav(`/p/${p.id}`)}
+              style={cover(p) ? { backgroundImage: `url(${cover(p)})` } : { background: "#d9d2c5" }}>
+              <span className="book-cap"><b>{p.title}</b><span>{p.photos.length} 순간</span></span>
+            </button>
+            <button className="book-del" aria-label="여행 삭제"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!confirm("이 여행을 삭제할까요? 되돌릴 수 없어요.")) return;
+                deleteProject(p.id).catch(() => {}).finally(() => {
+                  removeTrip(p.id); setTrips((t) => t.filter((x) => x.id !== p.id));
+                });
+              }}>×</button>
+          </div>
         ))}
         <button className="newbook" onClick={() => nav("/new")}><span>＋</span>새 여행</button>
       </div>

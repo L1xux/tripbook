@@ -2,7 +2,7 @@
  *  누가 호출: screens/NewTrip(새 여행), screens/AddMoments(여행 중 추가).
  *  무엇을 호출: api(uploadPhotos/uploadAudio/patchMoment/getAnalysis/photoImageUrl), components/Recorder. */
 import { useRef, useState } from "react";
-import { uploadPhotos, uploadAudio, patchMoment, getAnalysis, photoImageUrl, type Moment } from "../api";
+import { uploadPhotos, uploadAudio, patchMoment, deleteMoment, getAnalysis, photoImageUrl, type Moment } from "../api";
 import Recorder from "./Recorder";
 import Camera from "./Camera";
 
@@ -60,6 +60,11 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
     setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, emotion: e } : x));
   };
 
+  const removeMoment = (m: Moment) => {
+    if (!confirm("이 순간을 삭제할까요?")) return;
+    deleteMoment(m.id).then(() => setMoments((cur) => cur.filter((x) => x.id !== m.id)));
+  };
+
   const startEdit = (m: Moment) => { setEditing(m.id); setDraft(m.caption ?? ""); };
   const saveEdit = (m: Moment) => {
     const v = draft.trim();
@@ -81,6 +86,7 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
 
       {moments.map((m) => (
         <div key={m.id} className="capture-card">
+          <button className="cap-del" onClick={() => removeMoment(m)} aria-label="순간 삭제">×</button>
           <img className="capture-thumb" src={photoImageUrl(m.id)} alt="" />
           <div style={{ flex: 1, minWidth: 0 }}>
             <Recorder onRecorded={(b) => onAudio(m, b)} />

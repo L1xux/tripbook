@@ -1,6 +1,9 @@
-"""프로젝트 생성/조회 라우터. / main.py가 등록. / models·schemas 사용."""
+"""프로젝트 생성/조회/삭제 라우터. / main.py가 등록. / models·schemas 사용."""
+import os
+import shutil
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from app.config import get_settings
 from app.db import get_db, get_or_404
 from app.models import Project
 from app.schemas import ProjectCreate, ProjectOut
@@ -23,6 +26,16 @@ def create_project(body: ProjectCreate, db: Session = Depends(get_db)):
 @router.get("/projects/{project_id}", response_model=ProjectOut)
 def get_project(project_id: str, db: Session = Depends(get_db)):
     return get_project_or_404(db, project_id)
+
+
+@router.delete("/projects/{project_id}")
+def delete_project(project_id: str, db: Session = Depends(get_db)):
+    project = get_project_or_404(db, project_id)
+    db.delete(project); db.commit()  # cascade: photos, recipients
+    base = get_settings().data_dir  # 디스크 파일(사진/음성)도 정리
+    for sub in ("photos", "audio"):
+        shutil.rmtree(os.path.join(base, sub, project_id), ignore_errors=True)
+    return {"ok": True}
 
 
 @router.post("/projects/{project_id}/emotion-arc")

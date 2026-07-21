@@ -29,6 +29,8 @@ export const createProject = (b: { title: string; start_date?: string; end_date?
   req<{ id: string }>("/api/v1/projects", { method: "POST", body: JSON.stringify(b) });
 export const getProject = (id: string) => req<Project>(`/api/v1/projects/${id}`);
 export const generateArc = (id: string) => req<{ arc: string | null }>(`/api/v1/projects/${id}/emotion-arc`, { method: "POST" });
+export const deleteProject = (id: string) => req(`/api/v1/projects/${id}`, { method: "DELETE" });
+export const deleteMoment = (momentId: string) => req(`/api/v1/moments/${momentId}`, { method: "DELETE" });
 export const uploadPhotos = (id: string, files: File[]) => {
   const fd = new FormData(); files.forEach((f) => fd.append("files", f));
   return req<{ photos: Moment[] }>(`/api/v1/projects/${id}/photos`, { method: "POST", body: fd });

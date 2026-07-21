@@ -124,6 +124,20 @@ def moment_audio(photo_id: str, db: Session = Depends(get_db)):
     return FileResponse(photo.audio_path, media_type=_audio_media_type(photo.audio_path))
 
 
+@router.delete("/moments/{photo_id}")
+def delete_moment(photo_id: str, db: Session = Depends(get_db)):
+    photo = get_or_404(db, Photo, photo_id, "moment")
+    paths = [photo.file_path, (photo.file_path or "").replace(".jpg", "_small.jpg"), photo.audio_path]
+    db.delete(photo); db.commit()
+    for pth in paths:  # 디스크 파일도 정리(원본/리사이즈/음성)
+        if pth and os.path.exists(pth):
+            try:
+                os.remove(pth)
+            except OSError:
+                pass
+    return {"ok": True}
+
+
 @router.patch("/moments/{photo_id}")
 def patch_moment(photo_id: str, body: MomentPatch, db: Session = Depends(get_db)):
     photo = get_or_404(db, Photo, photo_id, "moment")
