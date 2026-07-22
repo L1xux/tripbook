@@ -1,7 +1,7 @@
 /** 주문 + 선물: 내 배송 입력 + (동행자에게) 선물 한 권 추가 → Sweetbook 주문. 완료 시 주문번호/상태.
  *  누가 호출: screens/Album(order 뷰).
  *  무엇을 호출: api(addRecipient/createOrder). */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { addRecipient, createOrder, type Project } from "../api";
 
 const BOOK_PRICE = 12600; // SQUAREBOOK_HC 기본가 — 배송비는 결제 시 계산
@@ -21,6 +21,7 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
   const [done, setDone] = useState<{ orders: { to: string; order_uid: string }[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const giftAdded = useRef(false);  // 재시도 시 수령인을 다시 추가하지 않도록(중복 방지)
 
   const copies = gift ? 2 : 1;
   const subtotal = BOOK_PRICE * copies;
@@ -30,7 +31,11 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
     if (gift && (!giftName || !giftPhone || !giftPostal || !giftAddr)) return setError("선물 받는 분의 정보도 모두 적어주세요");
     setError(""); setBusy(true);
     try {
-      if (gift) await addRecipient(project.id, { name: giftName, address: giftAddr, phone: giftPhone, postal_code: giftPostal });
+      // 수령인은 한 번만 추가한다 — 주문이 부분 실패해 재시도할 때 중복 수령인이 생기지 않도록
+      if (gift && !giftAdded.current) {
+        await addRecipient(project.id, { name: giftName, address: giftAddr, phone: giftPhone, postal_code: giftPostal });
+        giftAdded.current = true;
+      }
       const res = await createOrder(project.id, BOOK_SPEC, { name, phone, postalCode: postal, address });
       setDone(res);
     } catch (e) { setError(e instanceof Error ? e.message : "주문에 실패했어요"); } finally { setBusy(false); }

@@ -74,6 +74,47 @@ def test_webhook_updates_project_and_recipient(client, monkeypatch):
     assert status["order_status"] == "PRINTING"
 
 
+def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monkeypatch):
+    """나는 성공·수령인은 실패 → 성공분 보존 + 502. 재시도 시 나는 재주문 안 하고(멱등) 수령인만 재주문."""
+    import json
+    import app.routers.orders as orders
+    from app.sweetbook.client import SweetbookClient
+    calls = {"orders": 0, "books": 0}
+    state = {"fail_recipient": True}
+
+    def handler(req):
+        data = {"bookUid": "B1", "pageMeta": {"pageMin": 0, "currentPageCount": 99}}
+        if req.url.path.endswith("/books"):
+            calls["books"] += 1
+        if req.url.path.endswith("/orders"):
+            calls["orders"] += 1
+            name = json.loads(req.content)["shipping"]["recipientName"]
+            if name == "엄마" and state["fail_recipient"]:
+                return httpx.Response(500, text="boom")
+            data = {"orderUid": f"O-{name}"}
+        return httpx.Response(200, json={"success": True, "message": "ok", "data": data})
+
+    monkeypatch.setattr(orders, "get_sweetbook_client",
+                        lambda: SweetbookClient("k", "sandbox", transport=httpx.MockTransport(handler)))
+    pid = _project_with_photo(client, monkeypatch)
+    client.post(f"/api/v1/projects/{pid}/recipients", json={"name": "엄마", "address": "서울"})
+
+    # 1차: 나 성공, 엄마 실패 → 502, 그러나 내 주문은 보존
+    r1 = client.post(f"/api/v1/projects/{pid}/order",
+                     json={"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산"}})
+    assert r1.status_code == 502
+    assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "ORDERED"
+
+    # 2차 재시도(엄마 성공): 책 재렌더 X, 나 재주문 X, 엄마만 주문
+    state["fail_recipient"] = False
+    r2 = client.post(f"/api/v1/projects/{pid}/order",
+                     json={"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산"}})
+    assert r2.status_code == 200
+    assert len(r2.json()["orders"]) == 2          # 나(기존) + 엄마(신규)
+    assert calls["orders"] == 3                    # 1차: 나+엄마실패=2, 2차: 엄마=1 (나는 재주문 안 됨)
+    assert calls["books"] == 1                     # 책은 1회만 렌더
+
+
 def test_order_requires_photos(client, monkeypatch):
     import app.routers.orders as orders
     monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)

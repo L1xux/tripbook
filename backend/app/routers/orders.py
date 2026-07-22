@@ -65,27 +65,55 @@ def _order_payload(book_uid: str, shipping: dict) -> dict:
 
 @router.post("/projects/{project_id}/order")
 def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)):
+    """책 1권 렌더 → 나 + 수령인마다 1권 주문. 각 외부 성공을 즉시 커밋하고, 이미 주문된 건 건너뛴다.
+    일부 실패해도 성공분은 보존되고, 재시도하면 실패분만 재주문한다(중복 주문 방지)."""
     project = get_project_or_404(db, project_id)
     if not project.photos:
         raise HTTPException(409, "순간을 하나 이상 담은 뒤 주문할 수 있습니다")
     client = get_sweetbook_client()
-    try:
-        # 책은 1회만 렌더 — 같은 책을 여러 권 인쇄한다
-        book_uid = TemplateRenderer(client).render(project, project.photos, body.spec)
-        orders = []
-        # 나에게 1권
-        me = client.create_order(_order_payload(book_uid, body.shipping))
-        project.sweetbook_order_id = me.get("orderUid")
-        orders.append({"to": body.shipping.get("name", "나"), "order_uid": me.get("orderUid")})
-        # 수령인마다 1권
-        for r in project.recipients:
-            o = client.create_order(_order_payload(book_uid, {"name": r.name, "address": r.address, "phone": r.phone, "postalCode": r.postal_code}))
-            r.sweetbook_order_id = o.get("orderUid"); r.order_status = "ORDERED"
-            orders.append({"to": r.name, "order_uid": o.get("orderUid")})
-    except SweetbookError:
-        raise HTTPException(502, "주문에 실패했습니다. 잠시 후 다시 시도해주세요")
-    project.sweetbook_book_id = book_uid
-    project.order_status = "ORDERED"
+
+    # 책은 1회만 렌더 — 이미 만든 책이 있으면 재사용해 재시도 시 중복 렌더/주문을 막는다
+    book_uid = project.sweetbook_book_id
+    if not book_uid:
+        try:
+            book_uid = TemplateRenderer(client).render(project, project.photos, body.spec)
+        except SweetbookError:
+            raise HTTPException(502, "책 생성에 실패했습니다. 잠시 후 다시 시도해주세요")
+        project.sweetbook_book_id = book_uid
+        db.commit()  # 렌더 성공을 즉시 보존(재시도 시 재렌더 방지)
+
+    orders: list[dict] = []
+    failed: list[str] = []
+
+    # 나에게 1권 — 아직 주문되지 않았을 때만(재시도 안전)
+    my_name = body.shipping.get("name", "나")
+    if not project.sweetbook_order_id:
+        try:
+            me = client.create_order(_order_payload(book_uid, body.shipping))
+            project.sweetbook_order_id = me.get("orderUid")
+            project.order_status = "ORDERED"
+            db.commit()  # 성공을 즉시 보존 — 이후 수령인이 실패해도 내 주문은 남는다
+        except SweetbookError:
+            failed.append(my_name)
+    if project.sweetbook_order_id:
+        orders.append({"to": my_name, "order_uid": project.sweetbook_order_id})
+
+    # 수령인마다 1권 — 아직 주문되지 않은 사람만
+    for r in project.recipients:
+        if not r.sweetbook_order_id:
+            try:
+                o = client.create_order(_order_payload(book_uid, {"name": r.name, "address": r.address, "phone": r.phone, "postalCode": r.postal_code}))
+                r.sweetbook_order_id = o.get("orderUid"); r.order_status = "ORDERED"
+                db.commit()  # 각 성공을 즉시 보존
+            except SweetbookError:
+                failed.append(r.name)
+                continue
+        orders.append({"to": r.name, "order_uid": r.sweetbook_order_id})
+
+    if failed:
+        # 일부만 성공 — 성공분은 이미 커밋됨. 다시 시도하면 위 건너뛰기로 실패분만 재주문한다.
+        raise HTTPException(502, f"일부 주문에 실패했어요({', '.join(failed)}). 성공한 주문은 저장됐고, 다시 시도하면 실패분만 재주문합니다.")
+
     project.status = "ordered"
     db.commit()
     return {"book_uid": book_uid, "orders": orders}
