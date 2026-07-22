@@ -45,7 +45,7 @@ export default function NewTrip() {
       <div className="cap-header">
         <button className="backbtn" onClick={() => nav("/")} aria-label="서재로">←</button>
         <h1 style={{ flex: 1 }}>{title}</h1>
-        <button className="btn-ghost" onClick={() => nav(`/p/${pid}`)}>앨범 →</button>
+        <button className="btn-ghost" onClick={() => nav("/")}>완료</button>
       </div>
       <div style={{ padding: "0 20px" }}>
         <MomentCapture projectId={pid} initialMoments={[]} />
