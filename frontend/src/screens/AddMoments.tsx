@@ -10,8 +10,15 @@ export default function AddMoments() {
   const { id = "" } = useParams();
   const nav = useNavigate();
   const [p, setP] = useState<Project | null>(null);
+  const [failed, setFailed] = useState(false);
 
-  useEffect(() => { getProject(id).then(setP); }, [id]);
+  useEffect(() => { getProject(id).then(setP).catch(() => setFailed(true)); }, [id]);
+  if (failed) return (
+    <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>
+      <p>여행을 불러오지 못했어요.</p>
+      <button className="btn-ghost" onClick={() => nav("/")}>← 서재로</button>
+    </div>
+  );
   if (!p) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
 
   return (

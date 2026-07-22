@@ -26,6 +26,14 @@ def test_failure_raises():
         make_client(handler).create_book({})
 
 
+def test_http_error_translated_to_sweetbook_error():
+    """비2xx(500 등)/네트워크 오류도 SweetbookError로 통일돼야 라우터가 502로 감싼다(raw 500 노출 방지)."""
+    def handler(req):
+        return httpx.Response(500, text="boom")
+    with pytest.raises(SweetbookError):
+        make_client(handler).create_order({"items": []})
+
+
 def test_renderer_calls_full_sequence(tmp_path):
     import io
     from PIL import Image

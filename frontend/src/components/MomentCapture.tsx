@@ -1,7 +1,7 @@
 /** 순간 담기(공용): 사진 추가 + 사진마다 목소리 녹음(자동 캡션) + 감정 탭. 새 여행/기존 여행 모두 이걸 쓴다.
  *  누가 호출: screens/NewTrip(새 여행), screens/AddMoments(여행 중 추가).
  *  무엇을 호출: api(uploadPhotos/uploadAudio/patchMoment/getAnalysis/photoImageUrl), components/Recorder. */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { uploadPhotos, uploadAudio, patchMoment, deleteMoment, getAnalysis, photoImageUrl, type Moment } from "../api";
 import Recorder from "./Recorder";
 import Camera from "./Camera";
@@ -15,11 +15,14 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  // 열린 폴링 인터벌을 추적해 언마운트 시 모두 정리한다(화면 이탈 후에도 백엔드를 계속 때리는 것 방지)
+  const timers = useRef<number[]>([]);
+  useEffect(() => () => { timers.current.forEach(clearInterval); timers.current = []; }, []);
 
   // 사진 업로드 후 Haiku 비전이 감정 후보(suggested_emotion)를 채우면 화면에 반영한다(짧게 폴링)
   const pollSuggestions = (ids: string[]) => {
     let tries = 0;
-    const poll = setInterval(async () => {
+    const poll = window.setInterval(async () => {
       tries++;
       const p = await getAnalysis(projectId);
       setMoments((cur) => cur.map((x) => {
@@ -29,6 +32,7 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
       const settled = ids.every((id) => p.photos.find((y) => y.id === id)?.suggested_emotion);
       if (settled || tries >= 6) clearInterval(poll);
     }, 2500);
+    timers.current.push(poll);
   };
 
   const addFiles = async (files: File[]) => {
@@ -42,10 +46,14 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   const onFiles = (files: FileList | null) => { if (files?.length) void addFiles([...files]); };
 
   const onAudio = async (m: Moment, blob: Blob) => {
-    await uploadAudio(m.id, blob);
+    try { await uploadAudio(m.id, blob); }
+    catch { setError("목소리를 올리지 못했어요"); return; }
     setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, has_audio: true } : x));
-    // 캡션 생성 폴링(이 순간만): audio 올린 순간에만, done/failed까지
-    const poll = setInterval(async () => {
+    // 캡션 생성 폴링(이 순간만): audio 올린 순간에만, done/failed까지 — 최대 시도 제한 + 언마운트 정리
+    let tries = 0;
+    const poll = window.setInterval(async () => {
+      // 분석이 끝나지 않아도 60초(30회) 후엔 폴링을 멈춘다(무한 폴링 방지)
+      if (++tries > 30) { clearInterval(poll); return; }
       const p = await getAnalysis(projectId);
       const s = p.photos.find((x) => x.id === m.id);
       if (s && (s.analysis_status === "done" || s.analysis_status === "failed")) {
@@ -53,11 +61,16 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
         setMoments((cur) => cur.map((x) => (x.id === m.id ? { ...x, caption: s.caption, analysis_status: s.analysis_status } : x)));
       }
     }, 2000);
+    timers.current.push(poll);
   };
 
   const setEmotion = (m: Moment, e: string) => {
-    patchMoment(m.id, { emotion: e });
+    const prev = m.emotion;  // PATCH 실패 시 되돌릴 이전 값
     setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, emotion: e } : x));
+    patchMoment(m.id, { emotion: e }).catch(() => {
+      setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, emotion: prev } : x));
+      setError("감정을 저장하지 못했어요");
+    });
   };
 
   const removeMoment = (m: Moment) => {
@@ -70,8 +83,12 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
     const v = draft.trim();
     setEditing(null);
     if (v && v !== m.caption) {
-      patchMoment(m.id, { caption: v });
+      const prev = m.caption;  // PATCH 실패 시 되돌릴 이전 캡션
       setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, caption: v } : x));
+      patchMoment(m.id, { caption: v }).catch(() => {
+        setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, caption: prev } : x));
+        setError("글귀를 저장하지 못했어요");
+      });
     }
   };
 

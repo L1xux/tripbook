@@ -13,6 +13,7 @@ export default function Album() {
   const { id = "" } = useParams();
   const nav = useNavigate();
   const [p, setP] = useState<Project | null>(null);
+  const [failed, setFailed] = useState(false);
   const [idx, setIdx] = useState(0);
   const [view, setView] = useState<"deck" | "grid" | "book" | "order" | "status">("deck");
   const [arcBusy, setArcBusy] = useState(false);
@@ -21,13 +22,19 @@ export default function Album() {
   const drag = useRef<number | null>(null);
   const swiped = useRef(false);
 
-  useEffect(() => { getProject(id).then(setP); }, [id]);
+  useEffect(() => { getProject(id).then(setP).catch(() => setFailed(true)); }, [id]);
 
   const makeArc = async () => {
     setArcBusy(true);
     try { const r = await generateArc(id); setP((prev) => prev ? { ...prev, emotion_arc: r.arc } : prev); }
     finally { setArcBusy(false); }
   };
+  if (failed) return (
+    <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>
+      <p>여행을 불러오지 못했어요.</p>
+      <button className="btn-ghost" onClick={() => nav("/")}>← 서재로</button>
+    </div>
+  );
   if (!p) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
 
   const M = p.photos;
@@ -36,9 +43,12 @@ export default function Album() {
   const goPrev = () => setIdx((i) => Math.max(0, i - 1));
   const goNext = () => setIdx((i) => Math.min(M.length, i + 1));
   const doMove = (from: number, to: number) => {
+    const prevOrder = M;  // PATCH 실패 시 되돌릴 이전 순서
     const arr = [...M]; const [it] = arr.splice(from, 1); arr.splice(to, 0, it);
     setP((prev) => prev ? { ...prev, photos: arr } : prev);
-    reorderMoments(id, arr.map((x) => x.id));
+    reorderMoments(id, arr.map((x) => x.id)).catch(() => {
+      setP((prev) => prev ? { ...prev, photos: prevOrder } : prev);
+    });
   };
 
   if (view === "grid") return (

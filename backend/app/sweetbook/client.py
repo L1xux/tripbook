@@ -32,10 +32,16 @@ class SweetbookClient:
         return body["data"]
 
     def _call(self, method: str, path: str, json: dict | None = None, params: dict | None = None) -> dict:
-        return self._unwrap(self._http.request(method, path, json=json, params=params))
+        try:
+            return self._unwrap(self._http.request(method, path, json=json, params=params))
+        except httpx.HTTPError as e:  # 타임아웃/연결실패/비2xx → 라우터가 502로 처리하도록 SweetbookError로 통일
+            raise SweetbookError(f"Sweetbook 통신 실패: {e}") from e
 
     def _call_multipart(self, method: str, path: str, data: dict, files: dict, params: dict | None = None) -> dict:
-        return self._unwrap(self._http.request(method, path, data=data, files=files, params=params))
+        try:
+            return self._unwrap(self._http.request(method, path, data=data, files=files, params=params))
+        except httpx.HTTPError as e:
+            raise SweetbookError(f"Sweetbook 통신 실패: {e}") from e
 
     def create_book(self, spec: dict) -> dict:
         return self._call("POST", "/books", json=spec)
