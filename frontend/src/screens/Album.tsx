@@ -96,7 +96,7 @@ export default function Album() {
         onPointerMove={(e) => { if (drag.current !== null && Math.abs(e.clientX - drag.current) > 12) swiped.current = true; }}
         onPointerUp={(e) => { const d = drag.current; drag.current = null; if (d !== null) { const dx = e.clientX - d; if (Math.abs(dx) > 50) (dx < 0 ? goNext() : goPrev()); } }}
         onClickCapture={(e) => { if (swiped.current) { e.stopPropagation(); swiped.current = false; } }}>
-        {atEnd ? (
+        {atEnd || !M[idx] ? (
           <div className="endcard">
             <div className="kick">{(p.title || "").toUpperCase()}</div>
             <h3>{M.length}개의 순간</h3>
@@ -108,7 +108,7 @@ export default function Album() {
             {!p.emotion_arc && M.length > 0 && (
               <button className="btn-ghost" onClick={makeArc} disabled={arcBusy}>{arcBusy ? "요약하는 중…" : "✨ 이 여행 감정 요약"}</button>
             )}
-            <button className="btn-ghost" onClick={() => setIdx(M.length - 1)}>← 순간 더 보기</button>
+            {M.length > 0 && <button className="btn-ghost" onClick={() => setIdx(M.length - 1)}>← 순간 더 보기</button>}
           </div>
         ) : (
           <MomentCard key={M[idx].id} m={M[idx]} index={idx} stamp={stamp(idx)} />
