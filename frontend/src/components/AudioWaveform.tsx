@@ -3,11 +3,20 @@
  *  무엇을 호출: fetch(src) + AudioContext.decodeAudioData + <audio>. */
 import { useEffect, useRef, useState } from "react";
 
-export default function AudioWaveform({ src, bars = 32 }: { src: string; bars?: number }) {
+export default function AudioWaveform({ src, bars = 32, autoplay }: { src: string; bars?: number; autoplay?: boolean }) {
   const [peaks, setPeaks] = useState<number[]>([]);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 카드가 열리면(autoplay=true) 자동 재생 — "탭하면 그때 내 말이 떠올라요"의 실제 동작.
+  // autoplay를 넘기지 않는 화면(공개 /v/:id)에선 기존처럼 파형 탭으로만 재생한다.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || autoplay === undefined) return;
+    if (autoplay) void a.play().catch(() => { /* 자동재생 차단 시 파형 탭으로 재생 */ });
+    else { a.pause(); a.currentTime = 0; }
+  }, [autoplay]);
 
   useEffect(() => {
     let cancelled = false;

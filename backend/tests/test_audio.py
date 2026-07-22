@@ -41,6 +41,18 @@ def test_moment_out_has_audio_flag(client, monkeypatch):
     assert got["has_audio"] is True
 
 
+def test_audio_content_type_sniffed_per_format(client, monkeypatch):
+    """wav/mp3도 정확한 content-type으로 서빙돼야 브라우저 <audio>가 재생을 거부하지 않는다."""
+    wav = b"RIFF\x24\x90\x01\x00WAVE" + b"\x00" * 20        # RIFF....WAVE
+    mp3 = b"\xff\xf3\xe4\xc4" + b"\x00" * 20                 # MPEG 프레임 싱크
+    for magic, filename, expected in [(wav, "v.wav", "audio/wav"), (mp3, "v.mp3", "audio/mpeg")]:
+        mid = _seed_photo(client, monkeypatch)
+        client.post(f"/api/v1/moments/{mid}/audio", files=[("file", (filename, magic, "application/octet-stream"))])
+        r = client.get(f"/api/v1/moments/{mid}/audio")
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith(expected), (filename, r.headers["content-type"])
+
+
 def test_audio_saved_with_uploaded_extension(client, monkeypatch):
     """webm을 .m4a로 저장하면 Whisper 포맷 판별이 틀어진다 — 업로드 확장자를 보존해야 한다."""
     import app.db as db_module

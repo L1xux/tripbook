@@ -102,6 +102,12 @@ def _audio_media_type(path: str) -> str:
         return "audio/webm"
     if head[4:8] == b"ftyp":              # ISO-BMFF → m4a/mp4
         return "audio/mp4"
+    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":  # WAV
+        return "audio/wav"
+    if head[:4] == b"OggS":               # Ogg/Opus
+        return "audio/ogg"
+    if head[:3] == b"ID3" or head[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):  # MP3
+        return "audio/mpeg"
     return "application/octet-stream"
 
 
