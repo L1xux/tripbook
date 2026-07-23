@@ -70,7 +70,11 @@ input:focus{ outline:none; border-color:var(--stamp); }
 /* ── 순간 담기(NewTrip) ── */
 .capture-card{ position:relative; display:flex; gap:14px; background:var(--card); border-radius:16px; box-shadow:0 2px 10px rgba(64,44,20,.08);
   padding:14px; margin:14px 0; }
-.cap-del{ position:absolute; top:8px; right:10px; border:0; background:none; color:var(--soft); font-size:20px; line-height:1; cursor:pointer; z-index:2; padding:0; }
+/* 사진 위 모서리에 둔다 — 우상단은 전체 폭 녹음 버튼이 차지하고, 서재 삭제 버튼과 같은 모양으로 통일 */
+.cap-del{ position:absolute; top:8px; left:8px; width:22px; height:22px; border-radius:999px; border:0;
+  background:rgba(16,12,8,.55); color:#fff; font:400 14px/1 var(--sans); cursor:pointer; z-index:3; padding:0;
+  display:flex; align-items:center; justify-content:center; }
+.cap-del:active{ background:rgba(16,12,8,.8); }
 .capture-thumb{ width:84px; height:84px; object-fit:cover; border-radius:8px; flex-shrink:0; background:#d9d2c5; }
 .capture-cap{ font:400 14px/1.7 var(--serif); color:var(--ink); margin:10px 0; word-break:keep-all; }
 .capture-cap.muted{ color:var(--soft); font-family:var(--sans); font-size:13px; }
