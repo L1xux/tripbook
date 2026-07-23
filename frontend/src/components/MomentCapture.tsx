@@ -117,7 +117,7 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
             <button className="cap-del" onClick={() => removeMoment(m)} aria-label="순간 삭제">×</button>
           </div>
           <div className="capture-body">
-            <Recorder onRecorded={(b) => onAudio(m, b)} />
+            <Recorder onRecorded={(b) => onAudio(m, b)} busy={m.analysis_status === "processing"} />
             {editing === m.id ? (
               <textarea className="cap-edit" value={draft} autoFocus
                 onChange={(e) => setDraft(e.target.value)} onBlur={() => saveEdit(m)} />

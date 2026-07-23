@@ -3,7 +3,7 @@
  *  무엇을 호출: navigator.mediaDevices, MediaRecorder. */
 import { useEffect, useRef, useState } from "react";
 
-export default function Recorder({ onRecorded }: { onRecorded: (b: Blob) => void }) {
+export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) => void; busy?: boolean }) {
   const [rec, setRec] = useState(false);
   const [sec, setSec] = useState(0);
   const mr = useRef<MediaRecorder | null>(null);
@@ -29,9 +29,12 @@ export default function Recorder({ onRecorded }: { onRecorded: (b: Blob) => void
   };
   const stop = () => { mr.current?.stop(); setRec(false); if (timer.current) clearInterval(timer.current); };
 
+  // 녹음이 끝나고 글귀로 옮기는 동안(busy)엔 다시 녹음하지 못하게 막는다
+  // — 반복 녹음이 무음 전사를 부르던 원인을 차단
   return (
-    <button type="button" className={rec ? "rec on" : "rec"} onClick={() => (rec ? stop() : start())}>
-      {rec ? `● ${sec}s · 탭해서 멈추기` : "🎙️ 목소리로 한 마디"}
+    <button type="button" className={rec ? "rec on" : "rec"} disabled={!!busy && !rec}
+      onClick={() => (rec ? stop() : start())}>
+      {rec ? `● ${sec}s · 탭해서 멈추기` : busy ? "목소리 담는 중…" : "🎙️ 목소리로 한 마디"}
     </button>
   );
 }
