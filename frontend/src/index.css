@@ -164,6 +164,10 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .card.open .sheet{ transform:translateY(0); }
 .sheet .q{ color:#fff; font:400 19px/1.85 var(--serif); word-break:keep-all; letter-spacing:.01em; white-space:pre-line; }
 /* 좁은 화면에서 라벨이 "내 목소/리"로 깨지지 않게: 글자는 줄바꿈 금지, 남는 폭은 파형이 양보한다 */
+/* 목소리 없는 순간을 카드에서 바로 담기 — 어두운 시트 위라 밝게 */
+.voice-add{ margin-top:16px; }
+.sheet .rec{ border-color:rgba(255,255,255,.45); color:#fff; }
+.sheet .rec:disabled{ opacity:.5; }
 .voice{ margin-top:18px; display:flex; align-items:center; gap:11px; }
 .voice .wave{ flex:0 1 auto; min-width:0; overflow:hidden; }
 .voice .lab{ font:500 12px/1 var(--sans); color:#fff; opacity:.85; white-space:nowrap; flex-shrink:0; }

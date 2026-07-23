@@ -121,7 +121,8 @@ export default function Album() {
             {M.length > 0 && <button className="btn-ghost" onClick={() => setIdx(M.length - 1)}>← 순간 더 보기</button>}
           </div>
         ) : (
-          <MomentCard key={M[idx].id} m={M[idx]} index={idx} stamp={stamp(idx)} />
+          <MomentCard key={M[idx].id} m={M[idx]} index={idx} stamp={stamp(idx)} projectId={id}
+            onUpdate={(patch) => setP((prev) => prev ? { ...prev, photos: prev.photos.map((x) => x.id === M[idx].id ? { ...x, ...patch } : x) } : prev)} />
         )}
       </div>
       {!atEnd && (
