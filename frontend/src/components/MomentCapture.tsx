@@ -46,14 +46,22 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   const onFiles = (files: FileList | null) => { if (files?.length) void addFiles([...files]); };
 
   const onAudio = async (m: Moment, blob: Blob) => {
+    // 녹음 직후 즉시 "처리 중" 표시 — 반응이 없으면 됐는지 알 수 없다
+    setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, has_audio: true, analysis_status: "processing" } : x));
     try { await uploadAudio(m.id, blob); }
-    catch { setError("목소리를 올리지 못했어요"); return; }
-    setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, has_audio: true } : x));
-    // 캡션 생성 폴링(이 순간만): audio 올린 순간에만, done/failed까지 — 최대 시도 제한 + 언마운트 정리
+    catch {
+      setMoments((cur) => cur.map((x) => x.id === m.id ? { ...x, has_audio: false, analysis_status: "pending" } : x));
+      setError("목소리를 올리지 못했어요"); return;
+    }
+    // 캡션 생성 폴링(이 순간만): done/failed까지 — 최대 시도 제한 + 언마운트 정리
     let tries = 0;
     const poll = window.setInterval(async () => {
-      // 분석이 끝나지 않아도 60초(30회) 후엔 폴링을 멈춘다(무한 폴링 방지)
-      if (++tries > 30) { clearInterval(poll); return; }
+      // 분석이 끝나지 않아도 60초(30회) 후엔 멈추고 실패로 표시(무한 폴링·무한 로딩 방지)
+      if (++tries > 30) {
+        clearInterval(poll);
+        setMoments((cur) => cur.map((x) => x.id === m.id && x.analysis_status === "processing" ? { ...x, analysis_status: "failed" } : x));
+        return;
+      }
       const p = await getAnalysis(projectId);
       const s = p.photos.find((x) => x.id === m.id);
       if (s && (s.analysis_status === "done" || s.analysis_status === "failed")) {
@@ -95,7 +103,8 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
-      <div style={{ display: "flex", gap: 8, margin: "18px 0" }}>
+      <p className="capture-lead">사진을 담고, <b>그때의 목소리로</b><br />한 마디 남겨요.</p>
+      <div style={{ display: "flex", gap: 8, margin: "16px 0" }}>
         <button className="btn" style={{ flex: 1, padding: "13px" }} onClick={() => setCamOpen(true)}>📷 카메라로 찍기</button>
         <button className="btn-ghost" onClick={() => fileRef.current?.click()}>＋ 갤러리</button>
       </div>
@@ -103,18 +112,22 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
 
       {moments.map((m) => (
         <div key={m.id} className="capture-card">
-          <button className="cap-del" onClick={() => removeMoment(m)} aria-label="순간 삭제">×</button>
-          <img className="capture-thumb" src={photoImageUrl(m.id)} alt="" />
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="capture-photo">
+            <img className="capture-thumb" src={photoImageUrl(m.id)} alt="" />
+            <button className="cap-del" onClick={() => removeMoment(m)} aria-label="순간 삭제">×</button>
+          </div>
+          <div className="capture-body">
             <Recorder onRecorded={(b) => onAudio(m, b)} />
             {editing === m.id ? (
               <textarea className="cap-edit" value={draft} autoFocus
                 onChange={(e) => setDraft(e.target.value)} onBlur={() => saveEdit(m)} />
-            ) : m.analysis_status === "done" && m.caption ? (
+            ) : m.analysis_status === "processing" ? (
+              <p className="capture-cap busy">🖊️ 목소리를 글귀로 옮기는 중…</p>
+            ) : m.caption ? (
               <p className="capture-cap" onClick={() => startEdit(m)} title="탭해서 수정">“{m.caption}”</p>
-            ) : m.analysis_status === "pending" && m.caption == null ? (
+            ) : (
               <p className="capture-cap muted">녹음하면 여기에 글귀가 생겨요</p>
-            ) : null}
+            )}
             {!m.emotion && m.suggested_emotion && <p className="ai-hint">✨ AI가 이 순간을 “{m.suggested_emotion}”으로 봤어요 — 탭해서 선택</p>}
             <div className="emotions">
               {EMOTIONS.map((e) => {
