@@ -26,6 +26,25 @@ def test_transcribe_and_caption_saves(client, monkeypatch):
     assert m.analysis_status == "done"
 
 
+def test_empty_transcript_never_invents_caption(client, monkeypatch):
+    """전사가 비면(무음 등) 캡션을 지어내지 않는다 — polish도 호출하지 않는다(창작 금지)."""
+    import app.ai.caption as caption
+    import app.db as db_module
+    from app.models import Project, Photo
+    db = db_module.SessionLocal()
+    p = Project(title="t"); db.add(p); db.commit()
+    m = Photo(project_id=p.id, sort_order=0, file_path="x.jpg", audio_path="v.webm"); db.add(m); db.commit()
+
+    monkeypatch.setattr(caption, "transcribe", lambda path: "")
+    called = []
+    monkeypatch.setattr(caption, "polish_caption", lambda t: called.append(t) or "지어낸 여행 문장")
+    caption.transcribe_and_caption(m.id)
+    db.refresh(m)
+    assert called == []           # 폴리싱을 아예 부르지 않았다
+    assert m.caption is None       # 캡션은 비어 있다
+    assert m.analysis_status == "done"
+
+
 def test_pipeline_failure_keeps_transcript_as_caption(client, monkeypatch):
     import app.ai.caption as caption
     import app.db as db_module

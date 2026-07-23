@@ -49,3 +49,40 @@ def test_transcribe_passes_korean_language(monkeypatch, tmp_path):
     assert out == "안녕"
     assert calls["language"] == "ko"
     assert calls["model"] == "whisper-1"
+    # 여행 테마 프롬프트는 무음 환각을 유발하므로 더 이상 넘기지 않는다
+    assert "prompt" not in calls or not calls["prompt"]
+
+
+def _stt_client(monkeypatch, response):
+    import app.ai.stt as stt
+    class Tx:
+        @staticmethod
+        def create(**kw): return response
+    class FakeClient:
+        class audio:  # noqa
+            transcriptions = Tx
+    monkeypatch.setattr(stt, "get_stt_client", lambda: FakeClient())
+
+
+def test_transcribe_drops_silence_hallucination(monkeypatch, tmp_path):
+    """무음에서 Whisper가 지어낸 여행 문장(고 no_speech_prob·저 avg_logprob)은 버려 ''를 준다."""
+    import app.ai.stt as stt
+    R = type("R", (), {
+        "text": "여행 중 찍은 사진들을 보니 그때가 생생하게 떠오른다",  # 환각
+        "segments": [{"text": "여행 중 찍은 사진들을 보니…", "no_speech_prob": 0.93, "avg_logprob": -1.6}],
+    })()
+    _stt_client(monkeypatch, R)
+    f = tmp_path / "a.webm"; f.write_bytes(b"x")
+    assert stt.transcribe(str(f)) == ""
+
+
+def test_transcribe_keeps_confident_speech(monkeypatch, tmp_path):
+    import app.ai.stt as stt
+    R = type("R", (), {
+        "text": "무시됨",
+        "segments": [{"text": "안녕, ", "no_speech_prob": 0.02, "avg_logprob": -0.3},
+                     {"text": "만나서 반가워", "no_speech_prob": 0.03, "avg_logprob": -0.4}],
+    })()
+    _stt_client(monkeypatch, R)
+    f = tmp_path / "a.webm"; f.write_bytes(b"x")
+    assert stt.transcribe(str(f)) == "안녕, 만나서 반가워"

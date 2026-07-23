@@ -125,6 +125,8 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
               <p className="capture-cap busy">🖊️ 목소리를 글귀로 옮기는 중…</p>
             ) : m.caption ? (
               <p className="capture-cap" onClick={() => startEdit(m)} title="탭해서 수정">“{m.caption}”</p>
+            ) : m.has_audio && m.analysis_status === "done" ? (
+              <p className="capture-cap muted">목소리를 알아듣지 못했어요. 다시 한 번 담아볼까요?</p>
             ) : (
               <p className="capture-cap muted">녹음하면 여기에 글귀가 생겨요</p>
             )}

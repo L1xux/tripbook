@@ -33,6 +33,12 @@ def transcribe_and_caption(photo_id: str) -> None:
             return
         try:
             photo.transcript = transcribe(photo.audio_path)
+            if not photo.transcript:
+                # 알아들은 말이 없으면 지어내지 않는다 — 캡션을 비우고 끝낸다(창작 금지)
+                photo.caption = None
+                photo.analysis_status = "done"
+                db.commit()
+                return
             try:
                 photo.caption = polish_caption(photo.transcript)
             except Exception:
