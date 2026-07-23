@@ -27,12 +27,13 @@ export default function NewTrip() {
       <div className="cap-header">
         <button className="backbtn" onClick={() => nav("/")} aria-label="서재로">←</button>
       </div>
-      <div style={{ padding: "4px var(--gut) 0" }}>
-        <input placeholder="여행 제목 — 예: 제주, 봄" value={title} onChange={(e) => setTitle(e.target.value)}
-          style={{ font: "800 22px/1.3 var(--sans)", border: 0, background: "transparent", width: "100%", outline: "none", padding: 0 }} />
-        <input placeholder="함께한 사람 (선택)" value={companions} onChange={(e) => setCompanions(e.target.value)}
-          style={{ border: 0, borderBottom: "1px solid var(--line)", background: "transparent", width: "100%", padding: "8px 0", marginTop: 8, borderRadius: 0 }} />
+      <div className="newtrip-body">
+        <p className="cap-kick">새 여행</p>
+        <h1 className="newtrip-q">이번 여행을<br />무엇이라 부를까요?</h1>
+        <input className="newtrip-title" placeholder="예: 제주, 봄" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input className="newtrip-with" placeholder="함께한 사람 (선택)" value={companions} onChange={(e) => setCompanions(e.target.value)} />
         {error && <p className="error-text">{error}</p>}
+        <p className="newtrip-hint">제목을 정하면, 다음 화면에서 사진과 그때의 목소리로 순간을 담아요.</p>
       </div>
       <div className="bottom-bar">
         <button className="btn" style={{ width: "100%" }} onClick={start}>여행 시작하기</button>
