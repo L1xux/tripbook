@@ -86,3 +86,17 @@ def test_transcribe_keeps_confident_speech(monkeypatch, tmp_path):
     _stt_client(monkeypatch, R)
     f = tmp_path / "a.webm"; f.write_bytes(b"x")
     assert stt.transcribe(str(f)) == "안녕, 만나서 반가워"
+
+
+def test_transcribe_keeps_quiet_speech_with_low_logprob(monkeypatch, tmp_path):
+    """빠르거나 작은 실제 발화(낮은 avg_logprob)는 no_speech_prob가 낮으면 잘리면 안 된다.
+    ("안녕 만나서 반가워"의 뒷부분이 잘려 "안녕"만 남던 회귀 방지)"""
+    import app.ai.stt as stt
+    R = type("R", (), {
+        "text": "무시됨",
+        "segments": [{"text": "안녕 ", "no_speech_prob": 0.05, "avg_logprob": -0.4},
+                     {"text": "만나서 반가워", "no_speech_prob": 0.12, "avg_logprob": -1.35}],
+    })()
+    _stt_client(monkeypatch, R)
+    f = tmp_path / "a.webm"; f.write_bytes(b"x")
+    assert stt.transcribe(str(f)) == "안녕 만나서 반가워"

@@ -17,9 +17,9 @@ def _seg_get(seg, key: str, default: float) -> float:
 
 
 def _is_speech(seg) -> bool:
-    # 무음/저신뢰 세그먼트는 Whisper가 프롬프트풍 문장을 지어낸 것이므로 버린다.
-    # 임계값은 OpenAI가 무음 판별에 쓰는 기준(no_speech_prob>0.6, avg_logprob<-1)을 따른다.
-    return _seg_get(seg, "no_speech_prob", 0.0) < 0.6 and _seg_get(seg, "avg_logprob", 0.0) > -1.0
+    # 확실한 무음(매우 높은 no_speech_prob)만 버린다 — 여기서 Whisper가 여행 문장을 지어낸다.
+    # avg_logprob(로그확률)로는 거르지 않는다: 빠르거나 작은 실제 발화까지 잘려나가기 때문.
+    return _seg_get(seg, "no_speech_prob", 0.0) <= 0.85
 
 
 def _seg_text(seg) -> str:
