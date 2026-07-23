@@ -31,7 +31,7 @@ export default function Recorder({ onRecorded }: { onRecorded: (b: Blob) => void
 
   return (
     <button type="button" className={rec ? "rec on" : "rec"} onClick={() => (rec ? stop() : start())}>
-      {rec ? `● 녹음 중 ${sec}s — 탭해서 멈추기` : "🎙️ 목소리로 한 마디"}
+      {rec ? `● ${sec}s · 탭해서 멈추기` : "🎙️ 목소리로 한 마디"}
     </button>
   );
 }
