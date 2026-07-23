@@ -15,12 +15,16 @@ export default function Voice() {
   return (
     <div className="voice-page" style={{ backgroundImage: `url(${photoImageUrl(m.id)})` }}>
       <div className="voice-sheet">
+        <p className="voice-eyebrow">{m.project_title}</p>
         {m.emotion && <span className="chip">{m.emotion}</span>}
         <p className="q">{m.caption ?? m.transcript ?? "그때의 목소리"}</p>
-        {m.has_audio && (
-          <div className="voice">
-            <AudioWaveform src={audioUrl(m.id)} /><span className="lab">그때 목소리</span><span className="st">{m.project_title}</span>
+        {m.has_audio ? (
+          <div className="voice voice-play">
+            <AudioWaveform src={audioUrl(m.id)} bars={24} withButton />
+            <span className="lab">그때 목소리 듣기</span>
           </div>
+        ) : (
+          <p className="voice-none">이 순간엔 목소리가 담기지 않았어요.</p>
         )}
       </div>
     </div>

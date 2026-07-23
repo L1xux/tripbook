@@ -3,7 +3,7 @@
  *  무엇을 호출: fetch(src) + AudioContext.decodeAudioData + <audio>. */
 import { useEffect, useRef, useState } from "react";
 
-export default function AudioWaveform({ src, bars = 32, autoplay }: { src: string; bars?: number; autoplay?: boolean }) {
+export default function AudioWaveform({ src, bars = 32, autoplay, withButton }: { src: string; bars?: number; autoplay?: boolean; withButton?: boolean }) {
   const [peaks, setPeaks] = useState<number[]>([]);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -56,7 +56,8 @@ export default function AudioWaveform({ src, bars = 32, autoplay }: { src: strin
   };
 
   return (
-    <span className="wave" onClick={toggle} role="button" aria-label={playing ? "일시정지" : "재생"}>
+    <span className={"wave" + (withButton ? " has-ctl" : "")} onClick={toggle} role="button" aria-label={playing ? "일시정지" : "재생"}>
+      {withButton && <b className="wave-ctl" aria-hidden>{playing ? "❚❚" : "▶"}</b>}
       {shown.map((h, i) => (
         <i key={i} style={{ height: 5 + Math.round(17 * h) }} className={playing && i <= active ? "on" : ""} />
       ))}

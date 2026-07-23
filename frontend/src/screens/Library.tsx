@@ -9,6 +9,7 @@ import { getProject, deleteProject, photoImageUrl, type Project } from "../api";
 export default function Library() {
   const nav = useNavigate();
   const [trips, setTrips] = useState<Project[]>([]);
+  const [loaded, setLoaded] = useState(false);  // 로딩 중엔 빈 상태 문구를 깜빡이지 않도록
 
   useEffect(() => {
     Promise.all(listTrips().map((id) => getProject(id).catch(() => null)))
@@ -17,17 +18,24 @@ export default function Library() {
         // 삭제됐거나 못 찾는 여행 id는 서재에서 청소
         listTrips().filter((id) => !ok.some((p) => p.id === id)).forEach(removeTrip);
         setTrips(ok);
-      });
+      })
+      .finally(() => setLoaded(true));
   }, []);
+
+  const empty = loaded && trips.length === 0;
 
   const cover = (p: Project) => p.photos[0] ? photoImageUrl(p.photos[0].id) : undefined;
 
   return (
     <div style={{ padding: "70px var(--gut) 24px" }}>
       <h1 style={{ font: "800 27px/1.12 var(--sans)", letterSpacing: "-.03em" }}>여행 서재</h1>
-      <p style={{ font: "400 12px/1.4 var(--mono)", color: "var(--soft)", margin: "8px 2px 26px" }}>
-        {trips.length} TRIPS
-      </p>
+      {empty ? (
+        <p className="lib-intro">사진과 그때의 목소리를<br />한 권의 책으로 담아요.</p>
+      ) : (
+        <p style={{ font: "400 12px/1.4 var(--mono)", color: "var(--soft)", margin: "8px 2px 26px" }}>
+          {trips.length} TRIPS
+        </p>
+      )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 13 }}>
         {trips.map((p) => (
           <div key={p.id} className="book-wrap">
