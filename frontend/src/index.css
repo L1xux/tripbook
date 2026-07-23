@@ -3,7 +3,9 @@
    색은 반드시 아래 :root 변수를 쓴다(앰버는 시그니처·주요액션에만). */
 :root {
   --paper:#F7F4EE; --card:#FFFFFF; --ink:#191610; --soft:#8C8578; --line:#E7E1D6;
-  --stamp:#E4531F; --stamp-soft:#FBE9E0;
+  --stamp:#E4531F; --stamp-soft:#FBE9E0; --book-bg:#DFD9CF;
+  /* 화면 좌우 게터는 한 값만 쓴다 — 헤더·본문·그리드·카드가 모두 같은 세로선에 선다 */
+  --gut:20px;
   --serif:"Nanum Myeongjo",serif;
   --mono:"DM Mono",ui-monospace,monospace;
   --sans:-apple-system,system-ui,"Malgun Gothic",sans-serif;
@@ -30,8 +32,10 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .btn-ghost{ border:1.5px solid var(--line); border-radius:999px; background:transparent; color:var(--ink);
   font:600 14px/1 var(--sans); padding:13px 22px; cursor:pointer; }
 
+/* 페이드는 항상 뒤에 깔린 배경색으로 — 배경이 다른 화면(책 미리보기)에서 색 경계가 생기지 않게 --bar-bg로 받는다 */
 .bottom-bar{ position:fixed; bottom:0; left:50%; transform:translateX(-50%);
-  width:100%; max-width:430px; padding:16px 20px 22px; background:linear-gradient(transparent,var(--paper) 35%); }
+  width:100%; max-width:430px; padding:16px var(--gut) 22px;
+  background:linear-gradient(transparent,var(--bar-bg,var(--paper)) 35%); }
 
 /* ── 홈 서재 ── */
 .book{ position:relative; width:90px; aspect-ratio:3/4; border-radius:3px 8px 8px 3px; overflow:hidden; cursor:pointer;
@@ -49,12 +53,13 @@ input:focus{ outline:none; border-color:var(--stamp); }
   font:700 11px/1 var(--sans); cursor:pointer; flex-shrink:0; background:transparent; }
 .newbook span{ font-size:24px; font-weight:400; }
 .book-wrap{ position:relative; }
-.book-del{ position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:999px;
-  background:var(--ink); color:#fff; border:0; font:400 15px/1 var(--sans); cursor:pointer; z-index:4;
-  display:flex; align-items:center; justify-content:center; padding:0; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+/* 책 안쪽 모서리에 둔다 — 밖으로 빼면 옆 책과 붙어 어느 책의 버튼인지 모호해진다 */
+.book-del{ position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:999px;
+  background:rgba(16,12,8,.62); color:#fff; border:0; font:400 15px/1 var(--sans); cursor:pointer; z-index:4;
+  display:flex; align-items:center; justify-content:center; padding:0; box-shadow:0 1px 4px rgba(0,0,0,.35); }
 
 /* ── 순간 담기 헤더(뒤로가기) ── */
-.cap-header{ display:flex; align-items:center; gap:12px; padding:22px 20px 14px; }
+.cap-header{ display:flex; align-items:center; gap:12px; padding:22px var(--gut) 14px; }
 .backbtn{ width:40px; height:40px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
   color:var(--ink); font:400 19px/1 var(--sans); cursor:pointer; flex-shrink:0;
   display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(64,44,20,.06); }
@@ -97,19 +102,22 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .album-screen{ position:relative; min-height:100dvh; }
 .album-screen.dark{ background:#100c08; }
 .album-screen.light{ background:var(--paper); }
-.bar{ position:absolute; top:0; left:0; right:0; z-index:30; padding:22px 22px 12px;
+.bar{ position:absolute; top:0; left:0; right:0; z-index:30; padding:22px var(--gut) 12px;
   display:flex; align-items:center; justify-content:space-between; }
 .bar span{ font:800 15px/1 var(--sans); letter-spacing:-.01em; cursor:pointer; }
 .bar .ic{ font-size:18px; padding:5px; line-height:1; }
+/* 아이콘의 탭 영역(padding)만큼 글리프가 안쪽으로 밀리므로, 마지막 아이콘은 그만큼 당겨 게터에 맞춘다 */
+.bar .ic:last-child{ margin-right:-5px; }
 .bar.light span{ color:#fff; text-shadow:0 1px 6px rgba(0,0,0,.45); }
 .bar.dark span{ color:var(--ink); }
 .bar.dark .ic.on{ color:var(--stamp); }
 
 /* 덱 */
-.counter{ position:absolute; top:26px; left:0; right:0; text-align:center; z-index:25;
+/* top:30 = 헤더 타이틀과 같은 수직 중심(y=36)에 맞춘 값 */
+.counter{ position:absolute; top:30px; left:0; right:0; text-align:center; z-index:25;
   font:400 12px/1 var(--mono); color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.5); }
 .deck{ position:absolute; inset:0; }
-.card{ position:absolute; top:78px; bottom:92px; left:24px; right:24px; border-radius:26px; overflow:hidden;
+.card{ position:absolute; top:78px; bottom:92px; left:var(--gut); right:var(--gut); border-radius:26px; overflow:hidden;
   box-shadow:0 20px 44px rgba(0,0,0,.5); background-size:cover; background-position:center; cursor:pointer; }
 .chip{ position:absolute; top:18px; left:18px; z-index:6; font:700 11px/1 var(--sans); padding:7px 13px;
   border-radius:999px; background:rgba(255,255,255,.94); box-shadow:0 2px 10px rgba(0,0,0,.25); color:var(--ink); }
@@ -118,14 +126,17 @@ input:focus{ outline:none; border-color:var(--stamp); }
   pointer-events:none; transition:opacity .3s; }
 .card.open .taphint{ opacity:0; }
 /* 글귀 시트 (시그니처) */
-.sheet{ position:absolute; left:0; right:0; bottom:0; padding:70px 22px 26px;
+.sheet{ position:absolute; left:0; right:0; bottom:0; padding:70px var(--gut) 26px;
   background:linear-gradient(transparent,rgba(10,6,3,.5) 30%,rgba(10,6,3,.93) 72%);
   transform:translateY(101%); transition:transform .38s cubic-bezier(.34,.2,.2,1); }
 .card.open .sheet{ transform:translateY(0); }
 .sheet .q{ color:#fff; font:400 19px/1.85 var(--serif); word-break:keep-all; letter-spacing:.01em; white-space:pre-line; }
+/* 좁은 화면에서 라벨이 "내 목소/리"로 깨지지 않게: 글자는 줄바꿈 금지, 남는 폭은 파형이 양보한다 */
 .voice{ margin-top:18px; display:flex; align-items:center; gap:11px; }
-.voice .lab{ font:500 12px/1 var(--sans); color:#fff; opacity:.85; }
-.voice .st{ margin-left:auto; font:400 11px/1 var(--mono); color:#ffceac; letter-spacing:.04em; }
+.voice .wave{ flex:0 1 auto; min-width:0; overflow:hidden; }
+.voice .lab{ font:500 12px/1 var(--sans); color:#fff; opacity:.85; white-space:nowrap; flex-shrink:0; }
+.voice .st{ margin-left:auto; font:400 11px/1 var(--mono); color:#ffceac; letter-spacing:.04em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
 
 /* 음성 파형 (시그니처) */
 .wave{ display:inline-flex; align-items:center; gap:2.5px; height:22px; }
@@ -133,15 +144,17 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .wave i.on{ opacity:1; }
 
 /* 넘김 UI */
-.nav{ position:absolute; bottom:22px; z-index:20; color:#fff; font-size:28px; cursor:pointer; opacity:.45;
-  padding:6px 14px; user-select:none; }
+/* 화살표와 점은 같은 bottom·같은 height의 한 줄 — 서로 수직 중심이 어긋나지 않게 한다 */
+.nav{ position:absolute; bottom:22px; height:40px; z-index:20; color:#fff; font-size:28px; line-height:1;
+  cursor:pointer; opacity:.45; padding:0 14px; user-select:none; display:flex; align-items:center; }
 .nav:active{ opacity:1; } .nav.prev{ left:6px; } .nav.next{ right:6px; }
-.dots{ position:absolute; bottom:30px; left:0; right:0; display:flex; gap:6px; justify-content:center; z-index:12; }
+.dots{ position:absolute; bottom:22px; height:40px; left:0; right:0; display:flex; gap:6px;
+  align-items:center; justify-content:center; z-index:12; }
 .dots i{ width:6px; height:6px; border-radius:999px; background:rgba(255,255,255,.4); transition:width .2s; }
 .dots i.on{ background:#fff; width:20px; }
 
 /* 마지막 카드: 책으로 만들기 (돈으로 가는 climax) */
-.endcard{ position:absolute; top:78px; bottom:92px; left:24px; right:24px; border-radius:26px;
+.endcard{ position:absolute; top:78px; bottom:92px; left:var(--gut); right:var(--gut); border-radius:26px;
   background:var(--card); box-shadow:0 20px 44px rgba(0,0,0,.5);
   display:flex; flex-direction:column; align-items:center; justify-content:center; padding:34px 26px; text-align:center; gap:14px; }
 .endcard .kick{ font:400 11px/1 var(--mono); color:var(--stamp); letter-spacing:.12em; }
@@ -150,7 +163,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .endcard .arc{ font:400 14.5px/1.75 var(--serif); color:var(--ink); max-width:250px; word-break:keep-all; }
 
 /* ── 그리드 ── */
-.gwrap{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:70px 12px 18px; }
+.gwrap{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; padding:70px var(--gut) 18px; }
 .cell{ position:relative; aspect-ratio:1; border-radius:9px; overflow:hidden; cursor:pointer; border:0;
   background-size:cover; background-position:center; }
 .cell:active{ transform:scale(.97); }
@@ -158,7 +171,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .reorder-hint{ position:absolute; top:54px; left:0; right:0; text-align:center; z-index:15; font:500 12px/1.3 var(--sans); color:var(--stamp); }
 
 /* ── 책 미리보기(펼침면) ── */
-.bookview{ background:#dfd9cf; min-height:100dvh; padding:64px 20px 110px;
+.bookview{ background:var(--book-bg); --bar-bg:var(--book-bg); min-height:100dvh; padding:64px var(--gut) 110px;
   display:flex; flex-direction:column; gap:18px; align-items:center; }
 .spread{ width:100%; background:var(--card); border-radius:4px; box-shadow:0 8px 20px rgba(0,0,0,.16);
   display:flex; overflow:hidden; aspect-ratio:3/2; }
@@ -182,7 +195,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .toggle.on{ background:var(--stamp); }
 .toggle b{ position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:999px; background:#fff; transition:left .2s; }
 .toggle.on b{ left:21px; }
-.total{ display:flex; align-items:baseline; justify-content:space-between; margin:22px 2px 4px; padding-top:16px; border-top:1px solid var(--line); }
+.total{ display:flex; align-items:baseline; justify-content:space-between; margin:22px 0 4px; padding-top:16px; border-top:1px solid var(--line); }
 .total span{ font:600 14px/1 var(--sans); }
 .total b{ font:800 22px/1 var(--sans); }
 
@@ -193,7 +206,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .field-row{ display:flex; gap:8px; margin-top:8px; }
 .field-row input{ margin-top:0; }
 .gift-fields{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
-.ship-note{ font:400 11px/1.5 var(--mono); color:var(--soft); text-align:right; margin:0 2px; }
+.ship-note{ font:400 11px/1.5 var(--mono); color:var(--soft); text-align:right; margin:0; }
 /* g-top에 토글까지 한 줄로 — 가운데 텍스트가 남는 공간을 차지 */
 .gift .g-top > *:nth-child(2){ flex:1; }
 /* 주문 완료 영수증 */
@@ -205,7 +218,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
 
 /* 공개 재생 페이지 /v/:id */
 .voice-page{ position:relative; min-height:100dvh; background:#100c08 center/cover no-repeat; }
-.voice-sheet{ position:absolute; left:0; right:0; bottom:0; padding:80px 24px 40px;
+.voice-sheet{ position:absolute; left:0; right:0; bottom:0; padding:80px var(--gut) 40px;
   background:linear-gradient(transparent,rgba(10,6,3,.5) 30%,rgba(10,6,3,.94) 74%); }
 .voice-sheet .q{ color:#fff; font:400 21px/1.85 var(--serif); word-break:keep-all; white-space:pre-line; }
 .voice-empty{ min-height:100dvh; display:flex; align-items:center; justify-content:center;

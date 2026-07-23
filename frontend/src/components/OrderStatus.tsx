@@ -23,7 +23,7 @@ export default function OrderStatus({ projectId }: { projectId: string }) {
 
   if (!data) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
   return (
-    <div style={{ padding: "76px 22px 40px" }}>
+    <div style={{ padding: "76px var(--gut) 40px" }}>
       <p className="kicker">SWEETBOOK · 인쇄·배송</p>
       <h2 className="order-h">주문 현황</h2>
       <div className="receipt" style={{ marginTop: 18 }}>

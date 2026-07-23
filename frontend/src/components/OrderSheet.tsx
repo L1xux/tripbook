@@ -42,7 +42,7 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
   };
 
   if (done) return (
-    <div style={{ padding: "76px 22px" }}>
+    <div style={{ padding: "76px var(--gut)" }}>
       <p className="kicker">SWEETBOOK · 인쇄 접수</p>
       <h2 className="order-h">책이 인쇄소로 떠났어요</h2>
       <div className="receipt">
@@ -60,7 +60,7 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
   );
 
   return (
-    <div style={{ padding: "76px 22px 120px" }}>
+    <div style={{ padding: "76px var(--gut) 120px" }}>
       <p className="kicker">{(project.title || "TRIP").toUpperCase()} · {project.photos.length}개의 순간</p>
       <h2 className="order-h">한 권으로 만들어요</h2>
       <p className="muted order-sub">이 순간들이 손에 쥐는 한 권의 책이 됩니다.</p>

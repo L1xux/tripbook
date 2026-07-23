@@ -27,7 +27,7 @@ export default function NewTrip() {
       <div className="cap-header">
         <button className="backbtn" onClick={() => nav("/")} aria-label="서재로">←</button>
       </div>
-      <div style={{ padding: "4px 20px 0" }}>
+      <div style={{ padding: "4px var(--gut) 0" }}>
         <input placeholder="여행 제목 — 예: 제주, 봄" value={title} onChange={(e) => setTitle(e.target.value)}
           style={{ font: "800 22px/1.3 var(--sans)", border: 0, background: "transparent", width: "100%", outline: "none", padding: 0 }} />
         <input placeholder="함께한 사람 (선택)" value={companions} onChange={(e) => setCompanions(e.target.value)}
@@ -47,7 +47,7 @@ export default function NewTrip() {
         <h1 style={{ flex: 1 }}>{title}</h1>
         <button className="btn-ghost" onClick={() => nav("/")}>완료</button>
       </div>
-      <div style={{ padding: "0 20px" }}>
+      <div style={{ padding: "0 var(--gut)" }}>
         <MomentCapture projectId={pid} initialMoments={[]} />
       </div>
     </div>

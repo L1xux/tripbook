@@ -27,7 +27,7 @@ export default function AddMoments() {
         <button className="backbtn" onClick={() => nav(`/p/${id}`)} aria-label="여행 앨범으로">←</button>
         <div><p className="cap-kick">{(p.title || "TRIP").toUpperCase()}</p><h1>순간 담기</h1></div>
       </div>
-      <div style={{ padding: "0 20px" }}>
+      <div style={{ padding: "0 var(--gut)" }}>
         <MomentCapture projectId={id} initialMoments={p.photos} />
       </div>
     </div>

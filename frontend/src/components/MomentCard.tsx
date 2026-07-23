@@ -15,7 +15,7 @@ export default function MomentCard({ m, stamp }: { m: Moment; index: number; sta
       <div className="sheet">
         <p className="q">{m.caption ?? m.transcript ?? "아직 목소리가 없는 순간"}</p>
         {m.has_audio && (
-          <div className="voice"><AudioWaveform src={audioUrl(m.id)} autoplay={open} /><span className="lab">내 목소리</span><span className="st">{stamp}</span></div>
+          <div className="voice"><AudioWaveform src={audioUrl(m.id)} bars={24} autoplay={open} /><span className="lab">내 목소리</span><span className="st">{stamp}</span></div>
         )}
       </div>
     </div>

@@ -23,7 +23,7 @@ export default function Library() {
   const cover = (p: Project) => p.photos[0] ? photoImageUrl(p.photos[0].id) : undefined;
 
   return (
-    <div style={{ padding: "70px 20px 24px" }}>
+    <div style={{ padding: "70px var(--gut) 24px" }}>
       <h1 style={{ font: "800 27px/1.12 var(--sans)", letterSpacing: "-.03em" }}>여행 서재</h1>
       <p style={{ font: "400 12px/1.4 var(--mono)", color: "var(--soft)", margin: "8px 2px 26px" }}>
         {trips.length} TRIPS
