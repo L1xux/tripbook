@@ -7,7 +7,9 @@
   /* 화면 좌우 게터는 한 값만 쓴다 — 헤더·본문·그리드·카드가 모두 같은 세로선에 선다 */
   --gut:20px;
   --serif:"Nanum Myeongjo",serif;
-  --mono:"DM Mono",ui-monospace,monospace;
+  /* DM Mono·ui-monospace에는 한글 글리프가 없다. 한글 폴백을 generic monospace 앞에 두지 않으면
+     굴림 계열로 떨어져 11px에서 ㅈ의 윗획이 사라지고 ㅅ으로 읽힌다("제주"가 "제수"로). */
+  --mono:"DM Mono",ui-monospace,"Malgun Gothic","Apple SD Gothic Neo",monospace;
   --sans:-apple-system,system-ui,"Malgun Gothic",sans-serif;
 }
 
