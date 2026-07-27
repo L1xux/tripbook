@@ -8,7 +8,7 @@ import Recorder from "./Recorder";
 import { photoImageUrl, audioUrl, uploadAudio, getAnalysis, type Moment } from "../api";
 
 export default function MomentCard({ m, projectId, stamp, onUpdate }:
-  { m: Moment; index: number; stamp: string; projectId: string; onUpdate: (patch: Partial<Moment>) => void }) {
+  { m: Moment; index: number; stamp: { name: string; no: string }; projectId: string; onUpdate: (patch: Partial<Moment>) => void }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const timers = useRef<number[]>([]);
@@ -43,7 +43,8 @@ export default function MomentCard({ m, projectId, stamp, onUpdate }:
       <div className="sheet">
         <p className="q">{line}</p>
         {m.has_audio ? (
-          <div className="voice"><AudioWaveform src={audioUrl(m.id)} bars={24} autoplay={open} /><span className="lab">내 목소리</span><span className="st">{stamp}</span></div>
+          <div className="voice"><AudioWaveform src={audioUrl(m.id)} bars={24} autoplay={open} /><span className="lab">내 목소리</span>
+            <span className="st"><span className="st-ko">{stamp.name}</span><span className="st-no">{stamp.no}</span></span></div>
         ) : (
           <div className="voice-add" onClick={(e) => e.stopPropagation()}>
             <Recorder onRecorded={onAudio} busy={processing} />

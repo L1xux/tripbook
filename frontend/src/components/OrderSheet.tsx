@@ -75,7 +75,7 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
 
       <div className="gift">
         <div className="g-top">
-          <div className="g-face" />
+          <div className="g-book" aria-hidden="true" />
           <div><b>{project.companions || "함께한 사람"}에게도 한 권</b><span>같은 책을 선물로 보내기</span></div>
           <div className={"toggle" + (gift ? " on" : "")} onClick={() => setGift((g) => !g)} role="switch" aria-checked={gift}><b /></div>
         </div>

@@ -39,10 +39,27 @@ input:focus{ outline:none; border-color:var(--stamp); }
   width:100%; max-width:430px; padding:16px var(--gut) 22px;
   background:linear-gradient(transparent,var(--bar-bg,var(--paper)) 35%); }
 
+/* ── 필름 스탬프 / 아이브로우 ── */
+/* 모노+와이드 트래킹은 라틴·숫자 전용 장치다. 한글에 그대로 씌우면 음절이 흩어지고,
+   --mono엔 한글 글리프가 없어 폴백까지 타서 글자가 뭉갠다("제주"가 "제수"로 읽혔다).
+   한글 라벨은 sans로 세우고, 트래킹은 숨만 붙인다. 숫자·NO.만 모노를 유지한다. */
+.kick-ko{ font:500 11px/1.35 var(--sans); letter-spacing:.02em; color:var(--stamp); }
+
 /* ── 홈 서재 ── */
 /* 첫 실행(여행 0개) — 빈 화면을 제품 소개로. serif로 목소리/책의 정체를 슬쩍 드러낸다 */
 .lib-intro{ font:400 17px/1.6 var(--serif); color:var(--ink); margin:12px 2px 30px; word-break:keep-all; }
-.book{ position:relative; width:90px; aspect-ratio:3/4; border-radius:3px 8px 8px 3px; overflow:hidden; cursor:pointer;
+.lib-count{ font:500 12px/1.4 var(--sans); color:var(--soft); letter-spacing:.01em; margin:8px 2px 26px; }
+/* 서재는 책장이다 — 책은 허공이 아니라 선반 위에 선다.
+   행 높이를 고정하고 그 아래에 선반을 배경으로 반복해 그린다(열 수는 화면 폭이 정하게 둔다). */
+.shelf{ display:grid; grid-template-columns:repeat(auto-fill,90px); gap:var(--shelf-gap) 13px;
+  align-items:end; grid-auto-rows:var(--shelf-row); padding-bottom:var(--shelf-gap);
+  --shelf-row:120px; --shelf-gap:26px;
+  background-repeat:repeat-y; background-position:0 var(--shelf-row);
+  background-size:100% calc(var(--shelf-row) + var(--shelf-gap));
+  background-image:linear-gradient(to bottom,
+    var(--line) 0 1.5px, #d9d2c5 1.5px 3px, rgba(0,0,0,.10) 3px 5px, rgba(0,0,0,0) 5px); }
+.book-wrap{ position:relative; height:var(--bh,120px); }
+.book{ position:relative; width:90px; height:100%; border-radius:3px 8px 8px 3px; overflow:hidden; cursor:pointer;
   box-shadow:-4px 7px 15px rgba(0,0,0,.2); transition:transform .16s; flex-shrink:0; border:0; padding:0;
   background-size:cover; background-position:center; }
 .book:active{ transform:translateY(-4px); }
@@ -52,11 +69,10 @@ input:focus{ outline:none; border-color:var(--stamp); }
   background:linear-gradient(transparent,rgba(12,7,3,.82)); color:#fff; text-align:left; }
 .book-cap b{ font:800 11px/1.2 var(--sans); display:block; }
 .book-cap span{ font:400 8px/1 var(--mono); opacity:.9; }
-.newbook{ width:90px; aspect-ratio:3/4; border-radius:8px; border:1.5px dashed #cec7ba; color:var(--stamp);
+.newbook{ width:90px; height:120px; border-radius:8px; border:1.5px dashed #cec7ba; color:var(--stamp);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
   font:700 11px/1 var(--sans); cursor:pointer; flex-shrink:0; background:transparent; }
 .newbook span{ font-size:24px; font-weight:400; }
-.book-wrap{ position:relative; }
 /* 책 안쪽 모서리에 둔다 — 밖으로 빼면 옆 책과 붙어 어느 책의 버튼인지 모호해진다 */
 .book-del{ position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:999px;
   background:rgba(16,12,8,.62); color:#fff; border:0; font:400 15px/1 var(--sans); cursor:pointer; z-index:4;
@@ -69,7 +85,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
   display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(64,44,20,.06); }
 .backbtn:active{ transform:scale(.94); }
 .cap-header h1{ font:800 22px/1.15 var(--sans); letter-spacing:-.02em; }
-.cap-kick{ font:400 11px/1 var(--mono); color:var(--stamp); letter-spacing:.1em; margin-bottom:5px; }
+.cap-kick{ font:500 11px/1.35 var(--sans); letter-spacing:.02em; color:var(--stamp); margin-bottom:5px; }
 
 /* ── 새 여행 만들기(문턱): 상단을 명조 질문으로 채워 가운데 공백을 줄인다 ── */
 .newtrip-body{ padding:6px var(--gut) 0; }
@@ -93,8 +109,8 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .capture-photo{ position:relative; }
 .capture-thumb{ width:100%; height:200px; object-fit:cover; display:block; background:#d9d2c5; }
 .capture-body{ padding:14px; }
-/* 삭제 버튼: 사진 배너 위, 서재 삭제와 같은 반투명 원형 */
-.cap-del{ position:absolute; top:10px; left:10px; width:26px; height:26px; border-radius:999px; border:0;
+/* 삭제 버튼: 사진 배너 위, 서재 삭제와 같은 반투명 원형 — 모서리도 서재와 같은 오른쪽 위로 맞춘다 */
+.cap-del{ position:absolute; top:10px; right:10px; width:26px; height:26px; border-radius:999px; border:0;
   background:rgba(16,12,8,.5); color:#fff; font:400 15px/1 var(--sans); cursor:pointer; z-index:3; padding:0;
   display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.3); }
 .cap-del:active{ background:rgba(16,12,8,.78); }
@@ -173,8 +189,12 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .voice{ margin-top:18px; display:flex; align-items:center; gap:11px; }
 .voice .wave{ flex:0 1 auto; min-width:0; overflow:hidden; }
 .voice .lab{ font:500 12px/1 var(--sans); color:#fff; opacity:.85; white-space:nowrap; flex-shrink:0; }
-.voice .st{ margin-left:auto; font:400 11px/1 var(--mono); color:#ffceac; letter-spacing:.04em;
+/* 여행 이름(한글)은 sans, 컷 번호(숫자)는 모노 — 필름 카운터의 성격은 숫자에만 있다 */
+.voice .st{ margin-left:auto; display:flex; align-items:baseline; gap:7px; min-width:0; }
+.voice .st-ko{ font:500 11px/1 var(--sans); color:#ffceac;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.voice .st-no{ font:400 11px/1 var(--mono); color:#ffceac; letter-spacing:.08em; flex-shrink:0; }
+.voice .st-no::before{ content:"·"; margin-right:7px; opacity:.55; }
 
 /* 음성 파형 (시그니처) */
 .wave{ display:inline-flex; align-items:center; gap:2.5px; height:22px; }
@@ -200,7 +220,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .endcard{ position:absolute; top:78px; bottom:92px; left:var(--gut); right:var(--gut); border-radius:26px;
   background:var(--card); box-shadow:0 20px 44px rgba(0,0,0,.5);
   display:flex; flex-direction:column; align-items:center; justify-content:center; padding:34px 26px; text-align:center; gap:14px; }
-.endcard .kick{ font:400 11px/1 var(--mono); color:var(--stamp); letter-spacing:.12em; }
+.endcard .kick{ font:500 11px/1.35 var(--sans); letter-spacing:.02em; color:var(--stamp); }
 .endcard h3{ font:800 23px/1.3 var(--sans); letter-spacing:-.02em; }
 .endcard p{ font:400 13.5px/1.7 var(--sans); color:var(--soft); max-width:220px; word-break:keep-all; }
 .endcard .arc{ font:400 14.5px/1.75 var(--serif); color:var(--ink); max-width:250px; word-break:keep-all; }
@@ -219,7 +239,21 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .spread{ width:100%; background:var(--card); border-radius:4px; box-shadow:0 8px 20px rgba(0,0,0,.16);
   display:flex; overflow:hidden; aspect-ratio:3/2; }
 .spread .pg{ flex:1; position:relative; }
-.spread .pg.photo{ background-size:cover; background-position:center; }
+.spread .pg.photo{ background-size:cover; background-position:center;
+  display:flex; flex-direction:column; justify-content:flex-end; }
+/* 인쇄면엔 사진 아래에 종이 밴드 + QR이 실제로 들어간다(renderer.compose_page_image, band_ratio .18).
+   미리보기가 이걸 빼면 "이대로 인쇄된다"가 거짓말이 되고, 이 제품의 시그니처가 정작 안 보인다. */
+.qr-band{ height:18%; min-height:26px; background:var(--paper); display:flex; align-items:center;
+  justify-content:space-between; gap:6px; padding:0 7px; }
+.qr-note{ font:400 7.5px/1.35 var(--sans); color:var(--soft); word-break:keep-all; }
+/* 스캔되는 진짜 코드는 인쇄 시점에 생성된다 — 여기 것은 자리와 크기를 보여주는 도식이다 */
+.qr-mark{ height:74%; aspect-ratio:1; flex-shrink:0; background-color:#fff; border:1px solid var(--ink);
+  background-image:
+    linear-gradient(var(--ink),var(--ink)), linear-gradient(var(--ink),var(--ink)),
+    linear-gradient(var(--ink),var(--ink)), repeating-conic-gradient(var(--ink) 0 25%, #fff 0 50%);
+  background-size:5px 5px, 5px 5px, 5px 5px, 3px 3px;
+  background-position:1px 1px, calc(100% - 1px) 1px, 1px calc(100% - 1px), 0 0;
+  background-repeat:no-repeat, no-repeat, no-repeat, repeat; }
 .spread .pg.txt{ background:var(--card); padding:18px 16px; display:flex; flex-direction:column; justify-content:center; }
 .spread .pg.txt .q{ font:400 12.5px/1.8 var(--serif); color:var(--ink); word-break:keep-all; }
 .spread .pg.txt .st{ font:400 8px/1 var(--mono); color:var(--stamp); margin-top:12px; letter-spacing:.06em; }
@@ -229,7 +263,12 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .book-page{ background:var(--card); border-radius:16px; box-shadow:0 2px 10px rgba(64,44,20,.08); padding:20px; }
 .gift{ margin-top:18px; background:var(--stamp-soft); border-radius:16px; padding:18px; }
 .gift .g-top{ display:flex; align-items:center; gap:11px; }
-.gift .g-face{ width:34px; height:34px; border-radius:999px; background:linear-gradient(135deg,#f0a6c0,#7f4f82); flex-shrink:0; }
+/* 선물은 "같은 책을 한 권 더"다. 얼굴 모르는 사람의 아바타를 지어내는 대신
+   서재의 책 형태(비대칭 라운드 + 책등 그림자)를 그대로 가져와 무엇을 보내는지 보여준다. */
+.gift .g-book{ position:relative; width:26px; height:34px; flex-shrink:0; border-radius:2px 5px 5px 2px;
+  background:linear-gradient(160deg,#e88a52,#c8471a); box-shadow:-2px 3px 7px rgba(120,50,10,.28); }
+.gift .g-book::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+  border-radius:2px 0 0 2px; background:linear-gradient(90deg,rgba(0,0,0,.3),rgba(0,0,0,0)); }
 .gift .g-top b{ display:block; font:700 14px/1.3 var(--sans); }
 .gift .g-top span{ display:block; font:400 11.5px/1.4 var(--sans); color:#a4552f; margin-top:2px; }
 .gift .g-row{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
@@ -243,13 +282,13 @@ input:focus{ outline:none; border-color:var(--stamp); }
 .total b{ font:800 22px/1 var(--sans); }
 
 /* 주문 화면 조판 */
-.kicker{ font:400 11px/1 var(--mono); color:var(--stamp); letter-spacing:.12em; margin-bottom:12px; }
+.kicker{ font:500 11px/1.35 var(--sans); letter-spacing:.02em; color:var(--stamp); margin-bottom:12px; }
 .order-h{ font:800 24px/1.25 var(--sans); letter-spacing:-.02em; }
 .order-sub{ font:400 13.5px/1.6 var(--sans); margin:8px 0 24px; word-break:keep-all; }
 .field-row{ display:flex; gap:8px; margin-top:8px; }
 .field-row input{ margin-top:0; }
 .gift-fields{ margin-top:14px; display:flex; flex-direction:column; gap:8px; }
-.ship-note{ font:400 11px/1.5 var(--mono); color:var(--soft); text-align:right; margin:0; }
+.ship-note{ font:400 11.5px/1.5 var(--sans); color:var(--soft); text-align:right; margin:0; }
 /* g-top에 토글까지 한 줄로 — 가운데 텍스트가 남는 공간을 차지 */
 .gift .g-top > *:nth-child(2){ flex:1; }
 /* 주문 완료 영수증 */
@@ -265,7 +304,7 @@ input:focus{ outline:none; border-color:var(--stamp); }
   padding:110px var(--gut) calc(38px + env(safe-area-inset-bottom));
   background:linear-gradient(transparent,rgba(10,6,3,.5) 28%,rgba(10,6,3,.95) 72%);
   display:flex; flex-direction:column; align-items:flex-start; gap:13px; }
-.voice-eyebrow{ font:400 11px/1 var(--mono); letter-spacing:.16em; color:#ffceac; text-transform:uppercase; }
+.voice-eyebrow{ font:500 11px/1.35 var(--sans); letter-spacing:.02em; color:#ffceac; }
 .voice-sheet .chip{ position:static; }
 .voice-sheet .q{ color:#fff; font:400 21px/1.85 var(--serif); word-break:keep-all; white-space:pre-line; margin:2px 0; }
 /* 재생은 이 페이지의 유일한 행동 — 앰버 버튼으로 분명하게 */

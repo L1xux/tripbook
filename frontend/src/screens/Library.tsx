@@ -24,7 +24,10 @@ export default function Library() {
 
   const empty = loaded && trips.length === 0;
 
+  const moments = trips.reduce((n, p) => n + p.photos.length, 0);
   const cover = (p: Project) => p.photos[0] ? photoImageUrl(p.photos[0].id) : undefined;
+  // 책등 높이가 그 여행의 두께다 — 순간이 많을수록 책이 조금 더 높이 선다(120~140px)
+  const height = (p: Project) => 120 + Math.min(20, p.photos.length);
 
   return (
     <div style={{ padding: "70px var(--gut) 24px" }}>
@@ -32,13 +35,11 @@ export default function Library() {
       {empty ? (
         <p className="lib-intro">사진과 그때의 목소리를<br />한 권의 책으로 담아요.</p>
       ) : (
-        <p style={{ font: "400 12px/1.4 var(--mono)", color: "var(--soft)", margin: "8px 2px 26px" }}>
-          {trips.length} TRIPS
-        </p>
+        <p className="lib-count">여행 {trips.length}권 · 순간 {moments}개</p>
       )}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 13 }}>
+      <div className="shelf">
         {trips.map((p) => (
-          <div key={p.id} className="book-wrap">
+          <div key={p.id} className="book-wrap" style={{ "--bh": `${height(p)}px` } as React.CSSProperties}>
             <button className="book" onClick={() => nav(`/p/${p.id}`)}
               style={cover(p) ? { backgroundImage: `url(${cover(p)})` } : { background: "#d9d2c5" }}>
               <span className="book-cap"><b>{p.title}</b><span>{p.photos.length} 순간</span></span>

@@ -38,7 +38,9 @@ export default function Album() {
   if (!p) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
 
   const M = p.photos;
-  const stamp = (i: number) => `${(p.title || "TRIP").toUpperCase().slice(0, 6)} · ${String(i + 1).padStart(2, "0")}`;
+  // 여행 이름은 자르지 않고 그대로 넘긴다 — 넘치면 CSS가 …로 줄인다.
+  // (예전엔 toUpperCase().slice(0,6)이었는데, 한글엔 대문자가 없고 6자 자르기는 단어 중간을 끊었다)
+  const stamp = (i: number) => ({ name: p.title || "여행", no: String(i + 1).padStart(2, "0") });
   const atEnd = idx >= M.length;
   const goPrev = () => setIdx((i) => Math.max(0, i - 1));
   const goNext = () => setIdx((i) => Math.min(M.length, i + 1));
@@ -108,7 +110,7 @@ export default function Album() {
         onClickCapture={(e) => { if (swiped.current) { e.stopPropagation(); swiped.current = false; } }}>
         {atEnd || !M[idx] ? (
           <div className="endcard">
-            <div className="kick">{(p.title || "").toUpperCase()}</div>
+            <div className="kick">{p.title || ""}</div>
             <h3>{M.length}개의 순간</h3>
             {p.emotion_arc
               ? <p className="arc">“{p.emotion_arc}”</p>

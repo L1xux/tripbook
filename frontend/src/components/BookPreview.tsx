@@ -8,7 +8,15 @@ export default function BookPreview({ project, onOrder }: { project: Project; on
     <div className="bookview">
       {project.photos.map((m, i) => (
         <div key={m.id} className="spread">
-          <div className="pg photo" style={{ backgroundImage: `url(${photoImageUrl(m.id)})` }} />
+          {/* 오디오가 있는 순간만 QR 밴드가 인쇄된다 — 백엔드 renderer의 조건과 같게 둔다 */}
+          <div className="pg photo" style={{ backgroundImage: `url(${photoImageUrl(m.id)})` }}>
+            {m.has_audio && (
+              <div className="qr-band">
+                <span className="qr-note">스캔하면 그때 목소리</span>
+                <span className="qr-mark" aria-hidden="true" />
+              </div>
+            )}
+          </div>
           <div className="spine" />
           <div className="pg txt"><div className="q">{m.caption ?? ""}</div><div className="st">NO.{String(i + 1).padStart(2, "0")}</div></div>
         </div>
