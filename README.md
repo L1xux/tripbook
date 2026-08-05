@@ -31,8 +31,6 @@
 
 ![Tripbook 워크플로우](docs/workflow.svg)
 
-요청이 어느 파일을 거쳐 흐르는지는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)에 정리했습니다.
-
 ## 무엇을 다뤘나
 
 **Book Print API 연동과 고도화**
