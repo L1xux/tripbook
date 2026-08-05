@@ -75,7 +75,10 @@ def analysis_status(project_id: str, db: Session = Depends(get_db)):
 def photo_image(photo_id: str, db: Session = Depends(get_db)):
     """UI 썸네일용 이미지. 리사이즈본을 우선 서빙한다(원본은 인쇄용이라 무거움)."""
     photo = get_or_404(db, Photo, photo_id, "photo")
-    return FileResponse(small_path(photo.file_path), media_type="image/jpeg")
+    path = small_path(photo.file_path)
+    if not os.path.exists(path):  # 디스크에서 유실된 파일은 500(FileResponse RuntimeError)이 아니라 404로
+        raise HTTPException(404, "image not found")
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @router.post("/moments/{photo_id}/audio", status_code=202)
@@ -89,6 +92,12 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
         ext = ".m4a"
     dest = base / f"{photo.id}{ext}"
     dest.write_bytes(file.file.read())
+    # 재녹음이 다른 컨테이너로 오면(webm→m4a 등) 이전 파일이 고아로 남는다 — 경로가 바뀔 때 정리
+    if photo.audio_path and photo.audio_path != str(dest) and os.path.exists(photo.audio_path):
+        try:
+            os.remove(photo.audio_path)
+        except OSError:
+            pass
     photo.audio_path = str(dest)
     db.commit()
     background.add_task(caption.transcribe_and_caption, photo.id)
@@ -157,7 +166,8 @@ def patch_moment(photo_id: str, body: MomentPatch, db: Session = Depends(get_db)
 def reorder(project_id: str, body: OrderBody, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
     by_id = {p.id: p for p in project.photos}
-    if set(body.photo_ids) != set(by_id):
+    # 개수까지 일치해야 한다 — [a, a]는 set으로는 {a}와 같아 보여 중복이 정렬을 꼬이게 한다
+    if len(body.photo_ids) != len(by_id) or set(body.photo_ids) != set(by_id):
         raise HTTPException(422, "photo_ids must contain exactly all photos")
     for i, pid in enumerate(body.photo_ids):
         by_id[pid].sort_order = i

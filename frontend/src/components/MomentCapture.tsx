@@ -19,18 +19,20 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
   const timers = useRef<number[]>([]);
   useEffect(() => () => { timers.current.forEach(clearInterval); timers.current = []; }, []);
 
-  // 사진 업로드 후 Haiku 비전이 감정 후보(suggested_emotion)를 채우면 화면에 반영한다(짧게 폴링)
+  // 사진 업로드 후 AI 비전이 감정 후보(suggested_emotion)를 채우면 화면에 반영한다(짧게 폴링)
   const pollSuggestions = (ids: string[]) => {
     let tries = 0;
     const poll = window.setInterval(async () => {
-      tries++;
-      const p = await getAnalysis(projectId);
-      setMoments((cur) => cur.map((x) => {
-        const s = p.photos.find((y) => y.id === x.id);
-        return s?.suggested_emotion ? { ...x, suggested_emotion: s.suggested_emotion } : x;
-      }));
-      const settled = ids.every((id) => p.photos.find((y) => y.id === id)?.suggested_emotion);
-      if (settled || tries >= 6) clearInterval(poll);
+      // 종료 판정을 요청보다 먼저 — 백엔드가 죽어 getAnalysis가 계속 던지면 인터벌이 영원히 안 멈춘다
+      if (++tries > 6) { clearInterval(poll); return; }
+      try {
+        const p = await getAnalysis(projectId);
+        setMoments((cur) => cur.map((x) => {
+          const s = p.photos.find((y) => y.id === x.id);
+          return s?.suggested_emotion ? { ...x, suggested_emotion: s.suggested_emotion } : x;
+        }));
+        if (ids.every((id) => p.photos.find((y) => y.id === id)?.suggested_emotion)) clearInterval(poll);
+      } catch { /* 다음 틱에 재시도, tries가 상한 */ }
     }, 2500);
     timers.current.push(poll);
   };
@@ -43,7 +45,11 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
       pollSuggestions(photos.map((p) => p.id));
     } catch (e) { setError(e instanceof Error ? e.message : "사진을 올리지 못했어요"); }
   };
-  const onFiles = (files: FileList | null) => { if (files?.length) void addFiles([...files]); };
+  const onFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files?.length) void addFiles([...files]);
+    e.target.value = "";  // 리셋해야 같은 파일을 다시 골라도 change가 발화한다(삭제 후 재선택)
+  };
 
   const onAudio = async (m: Moment, blob: Blob) => {
     // 녹음 직후 즉시 "처리 중" 표시 — 반응이 없으면 됐는지 알 수 없다
@@ -62,12 +68,14 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
         setMoments((cur) => cur.map((x) => x.id === m.id && x.analysis_status === "processing" ? { ...x, analysis_status: "failed" } : x));
         return;
       }
-      const p = await getAnalysis(projectId);
-      const s = p.photos.find((x) => x.id === m.id);
-      if (s && (s.analysis_status === "done" || s.analysis_status === "failed")) {
-        clearInterval(poll);
-        setMoments((cur) => cur.map((x) => (x.id === m.id ? { ...x, caption: s.caption, analysis_status: s.analysis_status } : x)));
-      }
+      try {
+        const p = await getAnalysis(projectId);
+        const s = p.photos.find((x) => x.id === m.id);
+        if (s && (s.analysis_status === "done" || s.analysis_status === "failed")) {
+          clearInterval(poll);
+          setMoments((cur) => cur.map((x) => (x.id === m.id ? { ...x, caption: s.caption, analysis_status: s.analysis_status } : x)));
+        }
+      } catch { /* 일시 오류면 다음 틱에 재시도, tries가 상한 */ }
     }, 2000);
     timers.current.push(poll);
   };
@@ -102,7 +110,7 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
 
   return (
     <>
-      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFiles(e.target.files)} />
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onFiles} />
       <p className="capture-lead">사진을 담고, <b>그때의 목소리로</b><br />한 마디 남겨요.</p>
       <div style={{ display: "flex", gap: 8, margin: "16px 0" }}>
         <button className="btn" style={{ flex: 1, padding: "13px" }} onClick={() => setCamOpen(true)}>📷 카메라로 찍기</button>

@@ -23,12 +23,14 @@ export default function MomentCard({ m, projectId, stamp, onUpdate }:
     let tries = 0;
     const poll = window.setInterval(async () => {
       if (++tries > 30) { clearInterval(poll); setBusy(false); onUpdate({ analysis_status: "failed" }); return; }
-      const p = await getAnalysis(projectId);
-      const s = p.photos.find((x) => x.id === m.id);
-      if (s && (s.analysis_status === "done" || s.analysis_status === "failed")) {
-        clearInterval(poll); setBusy(false);
-        onUpdate({ caption: s.caption, transcript: s.transcript, analysis_status: s.analysis_status });
-      }
+      try {
+        const p = await getAnalysis(projectId);
+        const s = p.photos.find((x) => x.id === m.id);
+        if (s && (s.analysis_status === "done" || s.analysis_status === "failed")) {
+          clearInterval(poll); setBusy(false);
+          onUpdate({ caption: s.caption, transcript: s.transcript, analysis_status: s.analysis_status });
+        }
+      } catch { /* 일시 오류면 다음 틱에 재시도, tries가 상한 */ }
     }, 2000);
     timers.current.push(poll);
   };

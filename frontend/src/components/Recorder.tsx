@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) => void; busy?: boolean }) {
   const [rec, setRec] = useState(false);
   const [sec, setSec] = useState(0);
+  const [err, setErr] = useState("");
   const mr = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const timer = useRef<number | null>(null);
@@ -18,7 +19,15 @@ export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) =
   }, []);
 
   const start = async () => {
-    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let s: MediaStream;
+    try {
+      s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      // 권한 거부/마이크 없음 — 조용히 무시하면 버튼이 안 눌리는 걸로 보인다
+      setErr("마이크를 열 수 없어요. 브라우저 권한을 확인해주세요.");
+      return;
+    }
+    setErr("");
     stream.current = s;
     const m = new MediaRecorder(s);
     chunks.current = [];
@@ -32,9 +41,12 @@ export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) =
   // 녹음이 끝나고 글귀로 옮기는 동안(busy)엔 다시 녹음하지 못하게 막는다
   // — 반복 녹음이 무음 전사를 부르던 원인을 차단
   return (
-    <button type="button" className={rec ? "rec on" : "rec"} disabled={!!busy && !rec}
-      onClick={() => (rec ? stop() : start())}>
-      {rec ? `● ${sec}s · 탭해서 멈추기` : busy ? "목소리 담는 중…" : "🎙️ 목소리로 한 마디"}
-    </button>
+    <>
+      <button type="button" className={rec ? "rec on" : "rec"} disabled={!!busy && !rec}
+        onClick={() => (rec ? stop() : start())}>
+        {rec ? `● ${sec}s · 탭해서 멈추기` : busy ? "목소리 담는 중…" : "🎙️ 목소리로 한 마디"}
+      </button>
+      {err && <p className="error-text" style={{ margin: "6px 0 0", fontSize: 12 }}>{err}</p>}
+    </>
   );
 }

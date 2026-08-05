@@ -1,7 +1,8 @@
 /** 백엔드 v2 API 클라이언트. 모든 컴포넌트는 이 파일로만 서버와 통신한다.
  *  누가 호출: screens/*, components/* (프론트 전체).
  *  무엇을 호출: FastAPI v2 (/api/v1/*) — 프로젝트/사진/음성/캡션/주문. */
-const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
+// 기본 8273 — 이 PC에서 8000은 다른 프로젝트가 쓴다. 터널/프록시 경유 시 VITE_API_BASE=""(같은 오리진).
+const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8273";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

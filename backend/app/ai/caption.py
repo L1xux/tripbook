@@ -40,7 +40,8 @@ def transcribe_and_caption(photo_id: str) -> None:
                 db.commit()
                 return
             try:
-                photo.caption = polish_caption(photo.transcript)
+                # 편집이 빈 문자열을 돌려줘도 침묵하지 않는다 — 원문 폴백은 예외만이 아니라 빈 응답에도 적용
+                photo.caption = polish_caption(photo.transcript) or photo.transcript
             except Exception:
                 # 정리 실패 시 전사 원문을 캡션으로 보존 (감정 보존 우선)
                 photo.caption = photo.transcript

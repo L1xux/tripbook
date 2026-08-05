@@ -125,6 +125,37 @@ def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monk
     assert len(mom_keys) == 2 and mom_keys[0] == mom_keys[1]
 
 
+def test_changed_shipping_gets_new_idempotency_key(client, monkeypatch):
+    """Sweetbook은 4xx도 키에 24시간 캐시하고, 같은 키+다른 본문은 422로 거부한다.
+    잘못된 주소로 실패한 뒤 고쳐서 재시도하면 반드시 새 키가 나가야 한다(고정 키면 24시간 잠김)."""
+    import json
+    import app.routers.orders as orders
+    from app.sweetbook.client import SweetbookClient
+    keys: list[str] = []
+    state = {"fail": True}
+
+    def handler(req):
+        data = {"bookUid": "B1", "pageMeta": {"pageMin": 0, "currentPageCount": 99}}
+        if req.url.path.endswith("/orders"):
+            keys.append(req.headers.get("Idempotency-Key", ""))
+            if state["fail"]:
+                return httpx.Response(400, json={"success": False, "errorCode": "ERR_VALIDATION_FAILED",
+                                                 "message": "잘못된 우편번호", "errors": [], "fieldErrors": []})
+            data = {"orderUid": "O-1", "orderStatus": "PAID"}
+        return httpx.Response(200, json={"success": True, "message": "ok", "data": data})
+
+    monkeypatch.setattr(orders, "get_sweetbook_client",
+                        lambda: SweetbookClient("k", "sandbox", transport=httpx.MockTransport(handler)))
+    pid = _project_with_photo(client, monkeypatch)
+    bad = {"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산", "postalCode": "없음"}}
+    assert client.post(f"/api/v1/projects/{pid}/order", json=bad).status_code == 502
+
+    state["fail"] = False
+    good = {"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산", "postalCode": "48001"}}
+    assert client.post(f"/api/v1/projects/{pid}/order", json=good).status_code == 200
+    assert len(keys) == 2 and keys[0] != keys[1]  # 본문이 달라졌으니 키도 달라야 한다
+
+
 def test_order_requires_photos(client, monkeypatch):
     import app.routers.orders as orders
     monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)

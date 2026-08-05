@@ -45,6 +45,23 @@ def test_empty_transcript_never_invents_caption(client, monkeypatch):
     assert m.analysis_status == "done"
 
 
+def test_empty_polish_falls_back_to_transcript(client, monkeypatch):
+    """편집 LLM이 빈 문자열을 돌려줘도 침묵하지 않는다 — 전사 원문을 캡션으로 보존."""
+    import app.ai.caption as caption
+    import app.db as db_module
+    from app.models import Project, Photo
+    db = db_module.SessionLocal()
+    p = Project(title="t"); db.add(p); db.commit()
+    m = Photo(project_id=p.id, sort_order=0, file_path="x.jpg", audio_path="v.m4a"); db.add(m); db.commit()
+
+    monkeypatch.setattr(caption, "transcribe", lambda path: "바다가 파랬어")
+    monkeypatch.setattr(caption, "polish_caption", lambda t: "")
+    caption.transcribe_and_caption(m.id)
+    db.refresh(m)
+    assert m.caption == "바다가 파랬어"
+    assert m.analysis_status == "done"
+
+
 def test_pipeline_failure_keeps_transcript_as_caption(client, monkeypatch):
     import app.ai.caption as caption
     import app.db as db_module

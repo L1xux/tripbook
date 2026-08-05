@@ -69,6 +69,14 @@ def _order_payload(book_uid: str, shipping: dict, external_ref: str) -> dict:
             "shipping": _shipping(shipping), "externalRef": external_ref[:100]}
 
 
+def _idem_key(prefix: str, payload: dict) -> str:
+    """멱등 키는 본문에서 결정적으로 만든다. Sweetbook은 4xx 응답도 키에 24시간 캐시하고
+    같은 키+다른 본문을 422로 거부하므로 — 고정 키를 쓰면 '주소 오타로 실패 → 고쳐서 재시도'가
+    24시간 잠긴다. 같은 본문 재시도는 같은 키(이중 차감 방지), 고친 본문은 자연히 새 키."""
+    digest = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
+    return f"{prefix}-{digest}"
+
+
 def _place_order(client, payload: dict, key: str) -> dict:
     """주문 1건. 충전금 부족은 재시도해도 소용없으므로 즉시 402로 끊는다(다른 수령인도 같은 지갑)."""
     try:
@@ -105,8 +113,8 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
     my_name = body.shipping.get("name", "나")
     if not project.sweetbook_order_id:
         try:
-            me = _place_order(client, _order_payload(book_uid, body.shipping, f"tripbook:{project.id}:me"),
-                              key=f"tripbook-{project.id}-me")
+            payload = _order_payload(book_uid, body.shipping, f"tripbook:{project.id}:me")
+            me = _place_order(client, payload, key=_idem_key(f"tripbook-{project.id}-me", payload))
             project.sweetbook_order_id = me.get("orderUid")
             project.order_status = me.get("orderStatus", "PAID")  # 상태 문자열은 Sweetbook 것을 그대로 쓴다
             db.commit()  # 성공을 즉시 보존 — 이후 수령인이 실패해도 내 주문은 남는다
@@ -119,13 +127,11 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
     for r in project.recipients:
         if not r.sweetbook_order_id:
             try:
-                o = _place_order(
-                    client,
-                    _order_payload(book_uid,
-                                   {"name": r.name, "address": r.address, "phone": r.phone, "postalCode": r.postal_code},
-                                   f"tripbook:{project.id}:{r.id}"),
-                    key=f"tripbook-{project.id}-{r.id}",
-                )
+                payload = _order_payload(
+                    book_uid,
+                    {"name": r.name, "address": r.address, "phone": r.phone, "postalCode": r.postal_code},
+                    f"tripbook:{project.id}:{r.id}")
+                o = _place_order(client, payload, key=_idem_key(f"tripbook-{project.id}-{r.id}", payload))
                 r.sweetbook_order_id = o.get("orderUid"); r.order_status = o.get("orderStatus", "PAID")
                 db.commit()  # 각 성공을 즉시 보존
             except SweetbookError:
