@@ -16,8 +16,9 @@
 - **여행 중 계속 담고**(사진+녹음+감정), 다 훑은 뒤 **책으로 만들기 → 주문·선물**로 자연스럽게 잇는다.
 - 벤치마크: Remento(목소리 QR 하드커버). 우리는 같은 훅을 **여행 세그먼트**로 가져왔다.
 
-> 스크린샷 / 파트너 포털 주문 캡처: Sandbox 실검증 후 추가 예정
-> (`docs/SWEETBOOK_API_FEEDBACK.md`의 "다음 할 일" 참고)
+> Sweetbook Sandbox 실연동 완료 — 책 렌더(24p `isValid`)부터 **실주문 `or_3oKrIwb1C5Ao`**(`PDF_READY`,
+> 충전금 차감 확인)까지 완주했습니다. 연동 기록과 남은 항목(웹훅 등록)은
+> [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md)에 있습니다.
 
 ## 어떻게 동작하나
 
@@ -33,7 +34,7 @@
   photos.py ──▶ GET /moments/{id}/audio (오디오 서빙) · GET /moments/{id} (공개 조회) ──▶ /v/:id 재생 페이지
   projects.py ──▶ arc.py ──▶ OpenAI gpt-4o-mini (여행 감정 아크 요약, 캡션 기반)
   orders.py ──▶ sweetbook/renderer.py ──▶ Sweetbook API (create→cover→contents+QR밴드→finalize→order×수령인)
-        ◀── webhook (주문 상태 갱신)
+        ◀── webhook (HMAC 서명 검증 → 주문 상태 갱신)
 ```
 
 비주얼은 확정 목업(필름/Retro, `.superpowers/brainstorm/*/content/design-v1.html`)을 단일 기준으로 옮겼습니다.
@@ -46,8 +47,10 @@
 ```bash
 cd backend
 pip install -r requirements.txt
-cp ../.env.example ../.env   # 키 채우기: ANTHROPIC_API_KEY(캡션·감정), OPENAI_API_KEY(Whisper 전사), SWEETBOOK_API_KEY, SWEETBOOK_ENV
-uvicorn app.main:app --reload   # http://localhost:8000
+cp ../.env.example .env   # backend/.env에 둔다(설정 로딩이 실행 디렉터리 기준)
+                          # 키: OPENAI_API_KEY(캡션·감정·Whisper 전사), SWEETBOOK_API_KEY, SWEETBOOK_ENV,
+                          #     SWEETBOOK_WEBHOOK_SECRET(웹훅 서명 검증), PUBLIC_WEB_BASE
+uvicorn app.main:app --reload --port 8273   # http://localhost:8273
 ```
 
 ### 프론트엔드
@@ -55,7 +58,7 @@ uvicorn app.main:app --reload   # http://localhost:8000
 ```bash
 cd frontend
 npm install
-npm run dev   # http://localhost:5173
+npm run dev -- --port 5273   # http://localhost:5273  (VITE_API_BASE=http://localhost:8273)
 ```
 
 ### 로컬에서 바로 눌러보기 (데모 여행 시드)
@@ -66,18 +69,18 @@ npm run dev   # http://localhost:5173
 ```bash
 cd backend; python scripts/seed_demo.py
 # 출력된 URL을 브라우저에서 연다:
-#   앨범:      http://localhost:5173/p/<id>     (덱·글귀·파형·그리드·책·주문현황)
-#   순간 담기:  http://localhost:5173/p/<id>/add
-#   공개 재생:  http://localhost:5173/v/<moment-id>   (인쇄 QR 목적지)
+#   앨범:      http://localhost:5273/p/<id>     (덱·글귀·파형·그리드·책·주문현황)
+#   순간 담기:  http://localhost:5273/p/<id>/add
+#   공개 재생:  http://localhost:5273/v/<moment-id>   (인쇄 QR 목적지)
 ```
 
-> 주문을 실제로 걸려면 `frontend/src/components/OrderSheet.tsx`의 `BOOK_SPEC`에 있는
-> `REPLACE_ME` 3개(bookSpec/cover/content template uid)를 Sweetbook Sandbox 포털 값으로 교체하세요.
+> 주문에 쓰는 판형·템플릿 uid는 `frontend/src/components/OrderSheet.tsx`의 `BOOK_SPEC`에
+> Sandbox 실계약 값으로 들어가 있습니다. 다른 판형을 쓰려면 그 값을 교체하세요.
 
 ### 테스트 / E2E
 
 ```bash
-cd backend;  python -m pytest tests/ -v      # 백엔드 24개 테스트 (실키 불필요 — 전부 모킹)
+cd backend;  python -m pytest tests/ -v      # 백엔드 47개 테스트 (실키 불필요 — 전부 모킹)
 cd frontend; npm test && npm run build
 cd backend;  python scripts/demo_e2e.py      # uvicorn 실행 중 + 실키 필요
 ```

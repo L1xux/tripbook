@@ -6,7 +6,7 @@
 ## 기반 (설정 · DB · 모델)
 
 1. `backend/app/main.py` — 앱 조립(엔트리포인트). 여기서 시작하세요. **여기서 볼 것:** `create_app()`이 등록하는 라우터 목록 = 기능 지도.
-2. `backend/app/config.py` — `.env` 설정 로딩(`get_settings()`). **여기서 볼 것:** `ANTHROPIC_API_KEY`(캡션/감정 제안)와 `OPENAI_API_KEY`(Whisper 전사), SWEETBOOK 키가 어디서 오는지.
+2. `backend/app/config.py` — `.env` 설정 로딩(`get_settings()`). **여기서 볼 것:** `OPENAI_API_KEY`(캡션/감정 제안 + Whisper 전사), SWEETBOOK 키, `SWEETBOOK_WEBHOOK_SECRET`(웹훅 서명 검증 — 비어 있으면 검증 생략), `PUBLIC_WEB_BASE`(인쇄 QR 목적지)가 어디서 오는지.
 3. `backend/app/db.py` — DB 엔진/세션(`Base`, `SessionLocal`, `get_db`, `session_scope`). **여기서 볼 것:** `check_same_thread=False`인 이유(백그라운드 태스크), 요청 밖 잡이 쓰는 `session_scope`.
 4. `backend/app/models.py` — DB 테이블(Project/Photo=순간/Recipient). **여기서 볼 것:** Photo가 사진+음성+전사+캡션+감정을 한 행에 묶는 구조, status/analysis_status 상태 문자열, `has_audio` 프로퍼티, `emotion_arc`.
 5. `backend/app/schemas.py` — 요청/응답 Pydantic 스키마. **여기서 볼 것:** `MomentOut`(caption/transcript/suggested_emotion 포함), `ProjectOut`이 photos/recipients를 함께 내려주는 구조. (`PhotoOut = MomentOut`은 구 라우터 호환용 별칭.)
@@ -15,7 +15,7 @@
 
 6. `backend/app/routers/projects.py` — 프로젝트 생성/조회. **여기서 볼 것:** `get_project_or_404`(다른 라우터가 공용으로 씀).
 7. `backend/app/routers/photos.py` — 사진 업로드/음성 업로드/수정/정렬 + 오디오 서빙/공개 순간 조회. **여기서 볼 것:** 원본+리사이즈 저장 후 `analysis.analyze_batch` 백그라운드 실행, `upload_audio`가 `caption.transcribe_and_caption`을 백그라운드로 건다. `moment_audio`(바이트 스니핑으로 content-type), `get_moment`(공개 재생 페이지용, 인증 없음).
-8. `backend/app/routers/orders.py` — 수령인 등록/주문 생성/상태/웹훅. **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `create_order`를 반복 호출, `SweetbookError` → 502 매핑.
+8. `backend/app/routers/orders.py` — 수령인 등록/주문 생성/상태/웹훅. **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `_place_order`를 반복 호출(각각 `Idempotency-Key` — 타임아웃 재시도의 이중 차감 차단), `ERR_INSUFFICIENT_CREDIT` → 402 / 그 외 `SweetbookError` → 502 매핑. 웹훅은 `_verify_webhook`(HMAC-SHA256 + 타임스탬프 만료)과 `_should_apply`(늦게 도착한 과거 이벤트가 최신 상태를 되돌리지 않게 하는 `STATUS_RANK` 가드).
 
 ## AI 파이프라인
 
@@ -28,7 +28,7 @@
 
 ## Sweetbook 연동
 
-14. `backend/app/sweetbook/client.py` — Book Print API HTTP 클라이언트. **여기서 볼 것:** `{success, data, errors}` 언랩, transport 주입(테스트 모킹).
+14. `backend/app/sweetbook/client.py` — Book Print API HTTP 클라이언트. **여기서 볼 것:** `{success, data, errorCode, errors}` 언랩(에러 봉투를 먼저 읽어야 `errorCode`를 잃지 않는다), `create_order`의 `Idempotency-Key`, transport 주입(테스트 모킹).
 15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** 순간 1개=내지 1페이지(`?breakBefore=page`로 누적), 인쇄용 원본 이미지를 multipart로 첨부, 판형 최소 페이지(24p) 미달 시 여백 패딩. `compose_page_image`가 오디오 있는 순간에 사진 아래 종이색 밴드+QR(→`/v/:id`)을 합성(시그니처). Sandbox 실검증은 `docs/SWEETBOOK_API_FEEDBACK.md`.
 
 ## 프론트엔드 (v2 — 음성 캡션 포토북 UI)
