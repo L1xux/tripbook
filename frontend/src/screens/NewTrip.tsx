@@ -1,6 +1,6 @@
-/** 새 여행 만들기: 제목/동행자 입력 → 여행 생성 → 순간 담기(MomentCapture 공용).
- *  누가 호출: App 라우터(/new).
- *  무엇을 호출: api(createProject), lib/library(addTrip), components/MomentCapture. */
+/** 새 여행 만들기. 제목과 동행자를 받아 여행을 만들고 바로 순간 담기로 넘어간다.
+ *  누가 호출: App 라우터의 /new.
+ *  무엇을 호출: api의 createProject와 lib/library의 addTrip, components/MomentCapture. */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProject } from "../api";

@@ -1,6 +1,6 @@
-/** 공개 재생 페이지(인쇄 QR 목적지): 사진 + 명조 글귀 + 진짜 파형으로 그때 목소리를 다시 듣는다.
- *  누가 호출: App 라우터(/v/:id).
- *  무엇을 호출: api(getMoment/photoImageUrl/audioUrl), components/AudioWaveform. */
+/** 인쇄된 QR이 가리키는 공개 페이지. 사진과 글귀, 파형으로 그때 목소리를 다시 듣는다.
+ *  누가 호출: App 라우터의 /v/:id.
+ *  무엇을 호출: api의 getMoment와 audioUrl, components/AudioWaveform. */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getMoment, photoImageUrl, audioUrl, type PublicMoment } from "../api";

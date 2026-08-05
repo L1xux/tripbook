@@ -1,6 +1,6 @@
-/** 홈(서재): 이 기기에서 만든 여행을 책장에 책처럼 진열. 탭하면 그 여행이 열린다.
- *  누가 호출: App 라우터(/).
- *  무엇을 호출: lib/library(목록), api(getProject/photoImageUrl). */
+/** 홈 서재. 이 기기에서 만든 여행을 책장에 진열하고, 탭하면 그 여행이 열린다.
+ *  누가 호출: App 라우터의 루트 경로.
+ *  무엇을 호출: lib/library의 목록과 api의 getProject. */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listTrips, removeTrip } from "../lib/library";
@@ -9,13 +9,13 @@ import { getProject, deleteProject, photoImageUrl, type Project } from "../api";
 export default function Library() {
   const nav = useNavigate();
   const [trips, setTrips] = useState<Project[]>([]);
-  const [loaded, setLoaded] = useState(false);  // 로딩 중엔 빈 상태 문구를 깜빡이지 않도록
+  const [loaded, setLoaded] = useState(false);  // 불러오는 동안 빈 서재 문구가 깜빡이지 않게 한다
 
   useEffect(() => {
     Promise.all(listTrips().map((id) => getProject(id).catch(() => null)))
       .then((ps) => {
         const ok = ps.filter((p): p is Project => !!p);
-        // 삭제됐거나 못 찾는 여행 id는 서재에서 청소
+        // 지워졌거나 찾을 수 없는 여행은 서재 목록에서 뺀다
         listTrips().filter((id) => !ok.some((p) => p.id === id)).forEach(removeTrip);
         setTrips(ok);
       })
@@ -26,7 +26,7 @@ export default function Library() {
 
   const moments = trips.reduce((n, p) => n + p.photos.length, 0);
   const cover = (p: Project) => p.photos[0] ? photoImageUrl(p.photos[0].id) : undefined;
-  // 책등 높이가 그 여행의 두께다 — 순간이 많을수록 책이 조금 더 높이 선다(120~140px)
+  // 순간이 많을수록 책등이 조금 더 높아진다
   const height = (p: Project) => 120 + Math.min(20, p.photos.length);
 
   return (

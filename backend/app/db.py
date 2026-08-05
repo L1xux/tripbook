@@ -1,4 +1,4 @@
-"""DB 엔진/세션 관리. / 라우터들이 get_db로 호출. / SQLite 파일을 연다."""
+"""DB 엔진과 세션 관리. / 라우터가 get_db로 호출. / SQLite 파일을 연다."""
 import os
 from contextlib import contextmanager
 from fastapi import HTTPException
@@ -16,7 +16,7 @@ def make_engine(url: str | None = None):
     url = url or settings.database_url
     if url.startswith("sqlite:///"):
         os.makedirs(os.path.dirname(url.replace("sqlite:///", "")) or ".", exist_ok=True)
-    # 왜 check_same_thread=False: FastAPI 백그라운드 태스크가 다른 스레드에서 세션을 쓴다
+    # 백그라운드 태스크가 다른 스레드에서 세션을 쓰므로 check_same_thread를 끈다
     return create_engine(url, connect_args={"check_same_thread": False})
 
 
@@ -38,8 +38,8 @@ def get_db():
 
 @contextmanager
 def session_scope():
-    """요청 밖(백그라운드 잡)에서 쓰는 세션 수명 관리. get_db의 잡 버전."""
-    # 왜 SessionLocal을 매번 조회하는가: 테스트가 db_module.SessionLocal을 monkeypatch한다
+    """요청 밖에서 도는 백그라운드 잡이 쓰는 세션. get_db의 잡 버전이다."""
+    # 테스트가 SessionLocal을 갈아끼우므로 매번 모듈에서 다시 찾는다
     db = SessionLocal()
     try:
         yield db
@@ -48,7 +48,7 @@ def session_scope():
 
 
 def get_or_404(db, model, id_: str, label: str):
-    """모든 라우터가 공유하는 조회-또는-404. 라우터마다 재구현하지 않는다."""
+    """모든 라우터가 함께 쓰는 조회 후 404 처리."""
     row = db.get(model, id_)
     if not row:
         raise HTTPException(404, f"{label} not found")

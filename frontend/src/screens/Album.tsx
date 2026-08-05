@@ -1,6 +1,6 @@
-/** 앨범: 카드 덱(스와이프) ⇄ ▦ 전체 그리드. 덱 끝엔 "책으로 만들기" 카드(Task 5).
- *  누가 호출: App 라우터(/p/:id).
- *  무엇을 호출: api(getProject/photoImageUrl), components/MomentCard. */
+/** 앨범. 카드 덱과 전체 그리드를 오가고, 덱 끝에서 책 만들기로 이어진다.
+ *  누가 호출: App 라우터의 /p/:id.
+ *  무엇을 호출: api의 getProject와 generateArc, components의 MomentCard와 BookPreview. */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProject, generateArc, reorderMoments, photoImageUrl, type Project } from "../api";
@@ -38,14 +38,14 @@ export default function Album() {
   if (!p) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
 
   const M = p.photos;
-  // 여행 이름은 자르지 않고 그대로 넘긴다 — 넘치면 CSS가 …로 줄인다.
-  // (예전엔 toUpperCase().slice(0,6)이었는데, 한글엔 대문자가 없고 6자 자르기는 단어 중간을 끊었다)
+  // 여행 이름은 자르지 않고 그대로 넘기고, 넘치면 CSS가 줄임표로 줄인다.
+  // 한글에는 대문자가 없고 글자 수로 자르면 단어 중간이 끊긴다.
   const stamp = (i: number) => ({ name: p.title || "여행", no: String(i + 1).padStart(2, "0") });
   const atEnd = idx >= M.length;
   const goPrev = () => setIdx((i) => Math.max(0, i - 1));
   const goNext = () => setIdx((i) => Math.min(M.length, i + 1));
   const doMove = (from: number, to: number) => {
-    const prevOrder = M;  // PATCH 실패 시 되돌릴 이전 순서
+    const prevOrder = M;  // 저장에 실패하면 되돌릴 순서
     const arr = [...M]; const [it] = arr.splice(from, 1); arr.splice(to, 0, it);
     setP((prev) => prev ? { ...prev, photos: arr } : prev);
     reorderMoments(id, arr.map((x) => x.id)).catch(() => {

@@ -1,4 +1,4 @@
-"""사진 업로드/수정/정렬 라우터. / main.py가 등록. / imaging, ai.analysis 호출."""
+"""사진과 음성 업로드, 수정, 정렬 라우터. / main.py가 등록. / imaging과 ai 모듈을 호출."""
 import os
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile, HTTPException
@@ -42,20 +42,20 @@ def upload_photos(
         photo = Photo(project_id=project.id, sort_order=start + i, file_path="")
         db.add(photo); db.flush()
         raw = f.file.read()
-        # 왜 원본과 분석본을 분리하는가: 인쇄는 원본급 해상도(300dpi)가 필요하고,
-        # AI 분석은 1100px이면 충분 — 리사이즈본만 남기면 실물 책 화질이 깨진다
+        # 인쇄에는 원본 해상도가 필요하고 AI 분석에는 1100px이면 충분하다.
+        # 리사이즈본만 남기면 실물 책의 화질이 깨진다.
         orig = base / f"{photo.id}.jpg"
         orig.parent.mkdir(parents=True, exist_ok=True)
         orig.write_bytes(raw)
         photo.taken_at = save_resized(raw, base / f"{photo.id}_small.jpg")
         photo.file_path = str(orig)
         created.append(photo)
-    # EXIF 촬영일이 전부 있으면 그 순서로 초기 정렬 (없으면 업로드 순서 유지)
+    # 촬영일이 전부 있으면 그 순서로 정렬하고, 없으면 업로드 순서를 유지한다
     if all(p.taken_at for p in created) and start == 0:
         for i, p in enumerate(sorted(created, key=lambda p: p.taken_at)):
             p.sort_order = i
     db.commit()
-    # 왜 배치 하나로 거는가: BackgroundTasks는 순차 실행이라 장당 태스크는 비전 호출을 직렬화한다
+    # BackgroundTasks는 순차 실행이라 장당 태스크로 걸면 비전 호출이 직렬화된다
     background.add_task(analysis.analyze_batch, [p.id for p in created])
     ordered = sorted(created, key=lambda p: p.sort_order)
     return {"photos": [PhotoOut.model_validate(p).model_dump() for p in ordered]}
@@ -73,10 +73,10 @@ def analysis_status(project_id: str, db: Session = Depends(get_db)):
 
 @router.get("/photos/{photo_id}/image")
 def photo_image(photo_id: str, db: Session = Depends(get_db)):
-    """UI 썸네일용 이미지. 리사이즈본을 우선 서빙한다(원본은 인쇄용이라 무거움)."""
+    """화면에 쓰는 이미지. 원본은 인쇄용이라 무거우므로 리사이즈본을 먼저 준다."""
     photo = get_or_404(db, Photo, photo_id, "photo")
     path = small_path(photo.file_path)
-    if not os.path.exists(path):  # 디스크에서 유실된 파일은 500(FileResponse RuntimeError)이 아니라 404로
+    if not os.path.exists(path):  # 디스크에서 사라진 파일은 500이 아니라 404로 알린다
         raise HTTPException(404, "image not found")
     return FileResponse(path, media_type="image/jpeg")
 
@@ -86,13 +86,13 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
     photo = get_or_404(db, Photo, photo_id, "moment")
     base = Path(get_settings().data_dir) / "audio" / photo.project_id
     base.mkdir(parents=True, exist_ok=True)
-    # 업로드 확장자를 보존한다 — Whisper가 파일명 확장자로 포맷을 판별하므로 webm을 .m4a로 저장하면 전사가 틀어진다
+    # Whisper가 파일명 확장자로 포맷을 판별하므로 업로드된 확장자를 그대로 보존한다
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in (".webm", ".m4a", ".mp4", ".ogg", ".wav", ".mp3"):
         ext = ".m4a"
     dest = base / f"{photo.id}{ext}"
     dest.write_bytes(file.file.read())
-    # 재녹음이 다른 컨테이너로 오면(webm→m4a 등) 이전 파일이 고아로 남는다 — 경로가 바뀔 때 정리
+    # 재녹음이 다른 컨테이너로 오면 이전 파일이 고아로 남으므로 경로가 바뀔 때 지운다
     if photo.audio_path and photo.audio_path != str(dest) and os.path.exists(photo.audio_path):
         try:
             os.remove(photo.audio_path)
@@ -107,15 +107,15 @@ def upload_audio(photo_id: str, file: UploadFile, background: BackgroundTasks, d
 def _audio_media_type(path: str) -> str:
     with open(path, "rb") as f:
         head = f.read(12)
-    if head[:4] == b"\x1a\x45\xdf\xa3":   # EBML → webm/matroska
+    if head[:4] == b"\x1a\x45\xdf\xa3":   # EBML 헤더는 webm
         return "audio/webm"
-    if head[4:8] == b"ftyp":              # ISO-BMFF → m4a/mp4
+    if head[4:8] == b"ftyp":              # ISO 베이스 미디어는 m4a와 mp4
         return "audio/mp4"
-    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":  # WAV
+    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":  # WAV 헤더
         return "audio/wav"
-    if head[:4] == b"OggS":               # Ogg/Opus
+    if head[:4] == b"OggS":               # Ogg 컨테이너
         return "audio/ogg"
-    if head[:3] == b"ID3" or head[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):  # MP3
+    if head[:3] == b"ID3" or head[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):  # MP3 프레임
         return "audio/mpeg"
     return "application/octet-stream"
 
@@ -144,7 +144,7 @@ def delete_moment(photo_id: str, db: Session = Depends(get_db)):
     photo = get_or_404(db, Photo, photo_id, "moment")
     paths = [photo.file_path, (photo.file_path or "").replace(".jpg", "_small.jpg"), photo.audio_path]
     db.delete(photo); db.commit()
-    for pth in paths:  # 디스크 파일도 정리(원본/리사이즈/음성)
+    for pth in paths:  # 원본과 리사이즈본, 음성 파일도 함께 지운다
         if pth and os.path.exists(pth):
             try:
                 os.remove(pth)
@@ -166,7 +166,7 @@ def patch_moment(photo_id: str, body: MomentPatch, db: Session = Depends(get_db)
 def reorder(project_id: str, body: OrderBody, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
     by_id = {p.id: p for p in project.photos}
-    # 개수까지 일치해야 한다 — [a, a]는 set으로는 {a}와 같아 보여 중복이 정렬을 꼬이게 한다
+    # 개수까지 봐야 한다. 중복이 섞인 목록은 집합 비교만으로는 걸러지지 않는다.
     if len(body.photo_ids) != len(by_id) or set(body.photo_ids) != set(by_id):
         raise HTTPException(422, "photo_ids must contain exactly all photos")
     for i, pid in enumerate(body.photo_ids):

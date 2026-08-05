@@ -1,6 +1,6 @@
-/** 시그니처: 진짜 음성 파형 + 재생. 오디오를 Web Audio로 디코드해 진폭 막대를 그리고, 탭하면 재생/진행 표시.
- *  누가 호출: MomentCard, screens/Voice.
- *  무엇을 호출: fetch(src) + AudioContext.decodeAudioData + <audio>. */
+/** 오디오를 Web Audio로 디코드해 실제 진폭 막대를 그리고, 탭하면 재생하며 진행을 보여준다.
+ *  누가 호출: MomentCard와 screens/Voice.
+ *  무엇을 호출: fetch와 AudioContext.decodeAudioData, audio 엘리먼트. */
 import { useEffect, useRef, useState } from "react";
 
 export default function AudioWaveform({ src, bars = 32, autoplay, withButton }: { src: string; bars?: number; autoplay?: boolean; withButton?: boolean }) {
@@ -9,8 +9,7 @@ export default function AudioWaveform({ src, bars = 32, autoplay, withButton }: 
   const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // 카드가 열리면(autoplay=true) 자동 재생 — "탭하면 그때 내 말이 떠올라요"의 실제 동작.
-  // autoplay를 넘기지 않는 화면(공개 /v/:id)에선 기존처럼 파형 탭으로만 재생한다.
+  // 카드가 열리면 자동으로 재생한다. autoplay를 넘기지 않는 화면에서는 파형을 탭해야 재생된다.
   useEffect(() => {
     const a = audioRef.current;
     if (!a || autoplay === undefined) return;
@@ -40,7 +39,7 @@ export default function AudioWaveform({ src, bars = 32, autoplay, withButton }: 
           const max = Math.max(...out, 1e-4);
           if (!cancelled) setPeaks(out.map((v) => v / max));
         } finally {
-          ctx.close();  // 디코드 실패(예: Safari의 webm)해도 컨텍스트를 반드시 닫아 누수 방지
+          ctx.close();  // 디코드에 실패해도 컨텍스트를 닫아 누수를 막는다
         }
       } catch { /* 폴백 정적 막대 사용 */ }
     })();

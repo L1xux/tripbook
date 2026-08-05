@@ -1,4 +1,4 @@
-"""요청/응답 Pydantic 스키마. / 라우터가 호출. / models와 필드가 대응."""
+"""요청과 응답 스키마. / 라우터가 호출. / models의 필드와 대응한다."""
 from pydantic import BaseModel
 
 
@@ -50,5 +50,4 @@ class ProjectOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# Alias for backward compatibility with old routers
-PhotoOut = MomentOut
+PhotoOut = MomentOut  # 옛 라우터가 쓰던 이름

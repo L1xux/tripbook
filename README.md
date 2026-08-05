@@ -6,6 +6,51 @@
 캡션(글귀)으로 담고 — 지어내지 않습니다 — Sweetbook Book Print API로 실물 책을
 나 자신과 **선물 수령인**에게 주문하는 **모바일 퍼스트 웹 서비스**입니다.
 
+> 이 레포는 **서비스이자 연동 기록**입니다. Book Print API를 외부 파트너 입장에서 처음부터 붙여
+> 실주문까지 완주했고, 그 과정에서 막힌 지점과 개선 제안을 문서로 남겼습니다.
+> → [연동 피드백](docs/SWEETBOOK_API_FEEDBACK.md) · [API 개선 제안](docs/BOOK_PRINT_API_PROPOSAL.md)
+
+## Book Print API 연동 결과
+
+| 단계 | 결과 |
+|---|---|
+| 책 렌더 `create → cover → contents → finalization` | ✅ 24p `isValid: true`. 순간이 판형 최소 페이지에 못 미치면 여백으로 채웁니다 |
+| 주문 `POST /orders` | ✅ 실주문 완주 — `or_3oKrIwb1C5Ao`, `PDF_READY` |
+| 충전금 차감 | ✅ 총액 15,327원, 부가세 10%를 더해 16,850원 차감 |
+| 주문 취소·환불 `POST /orders/{uid}/cancel` | ✅ 제작 시작 전 전액 환불 |
+| 웹훅 수신 | ⬜ 미등록. 공개 HTTPS 주소를 확보하면 `PUT /webhooks/config` |
+
+## 이 레포에서 볼 수 있는 것
+
+### Book Print API 연동·고도화
+
+- 전 엔드포인트를 감싼 클라이언트 — [`sweetbook/client.py`](backend/app/sweetbook/client.py)
+- 책 조립 렌더러 — [`sweetbook/renderer.py`](backend/app/sweetbook/renderer.py)
+- 충전금·판형·웹훅 등록을 다루는 운영 CLI — [`sweetbook_ops.py`](backend/scripts/sweetbook_ops.py)
+- 파트너 입장에서 정리한 [연동 피드백](docs/SWEETBOOK_API_FEEDBACK.md)과 [개선 제안](docs/BOOK_PRINT_API_PROPOSAL.md)
+
+### API 기반 클라이언트 앱·웹
+
+- React 19 + TypeScript 모바일 퍼스트 SPA — [`frontend/src`](frontend/src)
+- 화면 흐름: 서재 → 순간 담기 → 앨범 → 책 펼침면 → 주문·선물
+
+### 인쇄·제작·배송 공정
+
+- 주문 상태 11종의 전이 흐름 — [`routers/orders.py`](backend/app/routers/orders.py)
+- HMAC 서명 검증과 재전송 순서 가드를 갖춘 웹훅 수신
+- 제작 시작 전 주문 취소와 전액 환불
+- 웹훅이 없는 동안의 상태 폴백, Rate Limit을 고려한 조회 묶음
+
+### AI 기반 서비스
+
+- Whisper 전사에서 캡션 편집까지의 파이프라인 — [`ai/caption.py`](backend/app/ai/caption.py)
+- 사용자가 말하지 않은 것은 쓰지 않는 창작 금지 불변식 `NO_INVENTION`
+
+### 개발 방식
+
+- Claude Code로 계획하고 TDD로 구현
+- 백엔드 테스트 63개, 프로젝트 규칙은 [`CLAUDE.md`](CLAUDE.md)
+
 ## ✨ 시그니처 — "종이책을 펼치면, 그때 내 목소리가 흘러나온다"
 
 - **진짜 목소리가 실물 책에 산다.** 순간마다 인쇄면에 **QR**을 넣어, 스캔하면 공개 페이지 `/v/:id`에서
@@ -15,10 +60,6 @@
   사진 감정 후보 제안(✨ 추천 칩), 캡션만으로 여행 **감정 아크** 요약 — 전부 사용자의 말에서만.
 - **여행 중 계속 담고**(사진+녹음+감정), 다 훑은 뒤 **책으로 만들기 → 주문·선물**로 자연스럽게 잇는다.
 - 벤치마크: Remento(목소리 QR 하드커버). 우리는 같은 훅을 **여행 세그먼트**로 가져왔다.
-
-> Sweetbook Sandbox 실연동 완료 — 책 렌더(24p `isValid`)부터 **실주문 `or_3oKrIwb1C5Ao`**(`PDF_READY`,
-> 충전금 차감 확인)까지 완주했습니다. 연동 기록과 남은 항목(웹훅 등록)은
-> [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md)에 있습니다.
 
 ## 어떻게 동작하나
 
@@ -74,13 +115,13 @@ cd backend; python scripts/seed_demo.py
 #   공개 재생:  http://localhost:5273/v/<moment-id>   (인쇄 QR 목적지)
 ```
 
-> 주문에 쓰는 판형·템플릿 uid는 `frontend/src/components/OrderSheet.tsx`의 `BOOK_SPEC`에
-> Sandbox 실계약 값으로 들어가 있습니다. 다른 판형을 쓰려면 그 값을 교체하세요.
+> 판형·템플릿 uid는 `backend/app/config.py`의 설정이 단일 출처입니다(프론트는 값을 들고 있지 않습니다).
+> 단가·판형명은 `GET /book-specs`로 그때그때 받아옵니다 — 다른 판형을 쓰려면 설정 3줄만 바꾸면 됩니다.
 
 ### 테스트 / E2E
 
 ```bash
-cd backend;  python -m pytest tests/ -v      # 백엔드 62개 테스트 (실키 불필요 — 전부 모킹)
+cd backend;  python -m pytest tests/ -v      # 백엔드 63개 테스트 (실키 불필요 — 전부 모킹)
 cd frontend; npm test && npm run build
 cd backend;  python scripts/demo_e2e.py      # uvicorn 실행 중 + 실키 필요
 ```
@@ -116,4 +157,5 @@ python scripts/sweetbook_ops.py webhook register https://…/api/v1/webhooks/swe
 | [`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) | 처음 보는 사람용 — 읽는 순서대로 파일 지도 |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 사진 업로드/집필/주문, 3가지 요청 여정 |
 | [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md) | Sweetbook 연동 피드백 (잘된 점/헤맨 점/제안) |
+| [`docs/BOOK_PRINT_API_PROPOSAL.md`](docs/BOOK_PRINT_API_PROPOSAL.md) | 파트너 온보딩 관점의 API 개선 제안 |
 | [`CLAUDE.md`](CLAUDE.md) | 프로젝트 규칙 (스택·테스트·컨벤션) |

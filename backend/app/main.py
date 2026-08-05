@@ -1,4 +1,4 @@
-"""FastAPI 앱 조립(엔트리포인트). / uvicorn이 호출. / 라우터·DB 초기화를 호출."""
+"""FastAPI 앱 조립. / uvicorn이 호출. / 라우터 등록과 DB 초기화를 부른다."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import init_db

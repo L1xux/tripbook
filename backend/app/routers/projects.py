@@ -1,4 +1,4 @@
-"""프로젝트 생성/조회/삭제 라우터. / main.py가 등록. / models·schemas 사용."""
+"""여행 생성과 조회, 삭제 라우터. / main.py가 등록. / models와 schemas를 사용."""
 import os
 import shutil
 from fastapi import APIRouter, Depends
@@ -31,8 +31,8 @@ def get_project(project_id: str, db: Session = Depends(get_db)):
 @router.delete("/projects/{project_id}")
 def delete_project(project_id: str, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
-    db.delete(project); db.commit()  # cascade: photos, recipients
-    base = get_settings().data_dir  # 디스크 파일(사진/음성)도 정리
+    db.delete(project); db.commit()  # 순간과 수령인은 함께 지워진다
+    base = get_settings().data_dir  # 사진과 음성 파일도 지운다
     for sub in ("photos", "audio"):
         shutil.rmtree(os.path.join(base, sub, project_id), ignore_errors=True)
     return {"ok": True}
@@ -40,7 +40,8 @@ def delete_project(project_id: str, db: Session = Depends(get_db)):
 
 @router.post("/projects/{project_id}/emotion-arc")
 def make_emotion_arc(project_id: str, db: Session = Depends(get_db)):
-    """사용자 캡션들로 여행 감정 아크를 생성·저장한다. 글귀 없거나 AI 실패 시 지어내지 않고 기존값 유지."""
+    """사용자 글귀로 여행 감정 아크를 만들어 저장한다.
+    글귀가 없거나 생성에 실패하면 지어내지 않고 기존 값을 그대로 둔다."""
     project = get_project_or_404(db, project_id)
     moments = [(p.emotion, p.caption) for p in project.photos]
     try:

@@ -1,10 +1,10 @@
-"""음성 캡션 파이프라인(전사→충실한 편집). / 음성 업로드가 백그라운드로 호출. / stt·llm 사용."""
+"""전사한 말을 글귀로 다듬는 파이프라인. / 음성 업로드가 백그라운드로 호출. / stt와 OpenAI를 사용."""
 import app.db as db_module
 from app.models import Photo
 from app.ai.stt import transcribe
 from app.ai.oai import CHAT_MODEL, get_oai_client
 
-# 왜 별도 상수: 창작 금지 규칙을 프롬프트와 테스트가 같은 문자열로 공유한다
+# 창작 금지 규칙을 프롬프트와 테스트가 같은 문자열로 공유하기 위해 상수로 둔다
 NO_INVENTION = "원문에 없는 사실·감정·인물·장소를 추가하지 않는다"
 
 
@@ -34,16 +34,16 @@ def transcribe_and_caption(photo_id: str) -> None:
         try:
             photo.transcript = transcribe(photo.audio_path)
             if not photo.transcript:
-                # 알아들은 말이 없으면 지어내지 않는다 — 캡션을 비우고 끝낸다(창작 금지)
+                # 알아들은 말이 없으면 지어내지 않고 캡션을 비운 채 끝낸다
                 photo.caption = None
                 photo.analysis_status = "done"
                 db.commit()
                 return
             try:
-                # 편집이 빈 문자열을 돌려줘도 침묵하지 않는다 — 원문 폴백은 예외만이 아니라 빈 응답에도 적용
+                # 편집이 빈 문자열을 돌려줘도 침묵하지 않고 전사 원문을 남긴다
                 photo.caption = polish_caption(photo.transcript) or photo.transcript
             except Exception:
-                # 정리 실패 시 전사 원문을 캡션으로 보존 (감정 보존 우선)
+                # 정리에 실패해도 전사 원문은 남긴다
                 photo.caption = photo.transcript
             photo.analysis_status = "done"
         except Exception:

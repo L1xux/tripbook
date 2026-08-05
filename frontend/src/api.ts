@@ -1,7 +1,7 @@
 /** 백엔드 v2 API 클라이언트. 모든 컴포넌트는 이 파일로만 서버와 통신한다.
- *  누가 호출: screens/*, components/* (프론트 전체).
- *  무엇을 호출: FastAPI v2 (/api/v1/*) — 프로젝트/사진/음성/캡션/주문. */
-// 기본 8273 — 이 PC에서 8000은 다른 프로젝트가 쓴다. 터널/프록시 경유 시 VITE_API_BASE=""(같은 오리진).
+ *  누가 호출: 프론트 전체의 화면과 컴포넌트.
+ *  무엇을 호출: 백엔드의 /api/v1 엔드포인트. */
+// 터널이나 프록시를 거칠 때는 VITE_API_BASE를 빈 값으로 두어 같은 오리진으로 보낸다.
 const BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8273";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -10,7 +10,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
   if (!res.ok) {
-    // 백엔드가 detail에 담아주는 한국어 메시지를 그대로 사용자에게 보여준다
+    // 백엔드가 detail에 담아준 한국어 메시지를 그대로 보여준다
     let msg = `요청 실패 (${res.status})`;
     try { const b = await res.json(); if (typeof b.detail === "string") msg = b.detail; } catch { /* keep */ }
     throw new Error(msg);
@@ -38,7 +38,7 @@ export const uploadPhotos = (id: string, files: File[]) => {
 };
 export const photoImageUrl = (momentId: string) => `${BASE}/api/v1/photos/${momentId}/image`;
 export const uploadAudio = (momentId: string, blob: Blob) => {
-  // 실제 녹음 포맷에 맞는 확장자로 올린다 — 서버가 이 확장자로 저장해 Whisper 포맷 판별이 맞는다
+  // 서버가 이 확장자로 저장하고 Whisper가 그걸로 포맷을 판별하므로 실제 녹음 포맷을 따른다
   const t = blob.type;
   const ext = t.includes("mp4") || t.includes("m4a") ? "m4a" : t.includes("ogg") ? "ogg" : "webm";
   const fd = new FormData(); fd.append("file", blob, `voice.${ext}`);
@@ -56,7 +56,7 @@ export const addRecipient = (id: string, b: { name: string; address: string; pho
 export const removeRecipient = (rid: string) => req(`/api/v1/recipients/${rid}`, { method: "DELETE" });
 export const patchRecipient = (rid: string, b: { name?: string; address?: string; phone?: string; postal_code?: string; gift_message?: string }) =>
   req(`/api/v1/recipients/${rid}`, { method: "PATCH", body: JSON.stringify(b) });
-// 판형·단가는 서버가 Sweetbook에서 받아 내려준다 — 프론트는 값을 들고 있지 않는다
+// 판형과 단가는 서버가 Sweetbook에서 받아 내려준다. 프론트는 값을 들고 있지 않는다.
 export interface BookSpec { name: string; price: number; page_min: number; page_max: number | null; page_increment: number }
 export const getBookSpec = (pages?: number) =>
   req<BookSpec>(`/api/v1/book-spec${pages ? `?pages=${pages}` : ""}`);

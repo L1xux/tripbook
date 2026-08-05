@@ -1,6 +1,6 @@
-/** 목소리 한 마디 녹음 버튼(MediaRecorder). 누르면 녹음, 다시 누르면 정지→onRecorded(blob).
- *  누가 호출: screens/NewTrip(사진마다 하나).
- *  무엇을 호출: navigator.mediaDevices, MediaRecorder. */
+/** 목소리 한 마디를 녹음하는 버튼. 누르면 녹음하고 다시 누르면 멈춰 결과를 넘긴다.
+ *  누가 호출: MomentCapture와 MomentCard.
+ *  무엇을 호출: navigator.mediaDevices와 MediaRecorder. */
 import { useEffect, useRef, useState } from "react";
 
 export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) => void; busy?: boolean }) {
@@ -12,7 +12,7 @@ export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) =
   const timer = useRef<number | null>(null);
   const stream = useRef<MediaStream | null>(null);
 
-  // 녹음 중 화면을 벗어나면(뒤로가기/완료) 마이크가 계속 켜진 채 남는다 — 언마운트 시 반드시 정리
+  // 녹음 중 화면을 벗어나면 마이크가 켜진 채 남으므로 언마운트 때 반드시 정리한다
   useEffect(() => () => {
     stream.current?.getTracks().forEach((t) => t.stop());
     if (timer.current) clearInterval(timer.current);
@@ -23,7 +23,7 @@ export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) =
     try {
       s = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      // 권한 거부/마이크 없음 — 조용히 무시하면 버튼이 안 눌리는 걸로 보인다
+      // 권한이 거부되거나 마이크가 없을 때 조용히 넘기면 버튼이 안 눌리는 것처럼 보인다
       setErr("마이크를 열 수 없어요. 브라우저 권한을 확인해주세요.");
       return;
     }
@@ -38,8 +38,7 @@ export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) =
   };
   const stop = () => { mr.current?.stop(); setRec(false); if (timer.current) clearInterval(timer.current); };
 
-  // 녹음이 끝나고 글귀로 옮기는 동안(busy)엔 다시 녹음하지 못하게 막는다
-  // — 반복 녹음이 무음 전사를 부르던 원인을 차단
+  // 글귀로 옮기는 동안에는 다시 녹음하지 못하게 막는다. 반복 녹음이 무음 전사를 부르던 원인이다.
   return (
     <>
       <button type="button" className={rec ? "rec on" : "rec"} disabled={!!busy && !rec}

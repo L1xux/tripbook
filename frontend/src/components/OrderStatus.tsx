@@ -1,10 +1,10 @@
-/** 주문 현황: 내 책 + 수령인별 인쇄/배송 상태를 폴링해 보여준다(웹훅으로 갱신됨).
- *  누가 호출: screens/Album(status 뷰).
- *  무엇을 호출: api(getOrderStatus). */
+/** 내 책과 수령인별 인쇄·배송 상태를 폴링해 보여주고, 제작 전이면 취소할 수 있다.
+ *  누가 호출: screens/Album의 주문 현황 화면.
+ *  무엇을 호출: api의 getOrderStatus와 cancelOrder. */
 import { useEffect, useState } from "react";
 import { getOrderStatus, cancelOrder } from "../api";
 
-// Sweetbook orderStatus enum 전체(docs/operations/order-status) — 서버가 주는 값 그대로 들어온다.
+// Sweetbook 주문 상태값. 서버가 주는 값이 그대로 들어온다.
 const LABEL: Record<string, string> = {
   PAID: "주문 완료", PDF_READY: "인쇄 준비 중", CONFIRMED: "제작 확정",
   IN_PRODUCTION: "인쇄 중", COMPLETED: "제작 완료", PRODUCTION_COMPLETE: "제작 완료",
@@ -26,7 +26,7 @@ export default function OrderStatus({ projectId }: { projectId: string }) {
     return () => { live = false; clearInterval(t); };
   }, [projectId]);
 
-  // 제작이 시작되기 전(PAID·PDF_READY)까지만 취소할 수 있다 — 가능 여부는 서버가 판단해 내려준다
+  // 제작이 시작되기 전까지만 취소할 수 있고, 가능 여부는 서버가 판단해 내려준다
   const cancel = async () => {
     if (!confirm("주문을 취소할까요? 결제한 금액은 전액 환불돼요.")) return;
     setBusy(true); setError("");

@@ -1,6 +1,6 @@
-/** 책 펼침면 미리보기: 순간마다 왼쪽 사진 / 오른쪽 명조 캡션 + 필름 스탬프. "이대로 인쇄된다".
- *  누가 호출: screens/Album(book 뷰).
- *  무엇을 호출: api(photoImageUrl). */
+/** 책 펼침면 미리보기. 왼쪽에 사진, 오른쪽에 명조 글귀를 놓아 인쇄될 모습을 그대로 보여준다.
+ *  누가 호출: screens/Album의 책 화면.
+ *  무엇을 호출: api의 photoImageUrl. */
 import { photoImageUrl, type Project } from "../api";
 
 export default function BookPreview({ project, onOrder }: { project: Project; onOrder: () => void }) {
@@ -8,7 +8,7 @@ export default function BookPreview({ project, onOrder }: { project: Project; on
     <div className="bookview">
       {project.photos.map((m, i) => (
         <div key={m.id} className="spread">
-          {/* 오디오가 있는 순간만 QR 밴드가 인쇄된다 — 백엔드 renderer의 조건과 같게 둔다 */}
+          {/* 목소리가 담긴 순간에만 QR 밴드가 인쇄된다. 백엔드 렌더러와 조건을 같게 둔다. */}
           <div className="pg photo" style={{ backgroundImage: `url(${photoImageUrl(m.id)})` }}>
             {m.has_audio && (
               <div className="qr-band">

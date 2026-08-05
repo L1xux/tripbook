@@ -1,7 +1,7 @@
-/** 순간 카드: 풀블리드 사진 + 탭하면 글귀 시트(A 하단 슬라이드업) + 감정 칩 + 음성 파형 + 필름 날짜 스탬프.
- *  목소리가 없는 순간은 카드에서 바로 녹음해 담을 수 있다.
- *  누가 호출: screens/Album(덱).
- *  무엇을 호출: api(photoImageUrl/audioUrl/uploadAudio/getAnalysis), components/AudioWaveform·Recorder. */
+/** 사진을 가득 채운 카드. 탭하면 글귀와 감정, 음성 파형, 필름 스탬프가 올라온다.
+ *  목소리가 없는 순간은 카드에서 바로 녹음할 수 있다.
+ *  누가 호출: screens/Album의 카드 덱.
+ *  무엇을 호출: api의 이미지·음성 함수, components의 AudioWaveform과 Recorder. */
 import { useEffect, useRef, useState } from "react";
 import AudioWaveform from "./AudioWaveform";
 import Recorder from "./Recorder";
@@ -14,7 +14,7 @@ export default function MomentCard({ m, projectId, stamp, onUpdate }:
   const timers = useRef<number[]>([]);
   useEffect(() => () => { timers.current.forEach(clearInterval); }, []);
 
-  // 카드에서 바로 목소리를 담는다 — 업로드 즉시 파형이 뜨고, 전사가 끝나면 글귀로 채워진다
+  // 카드에서 바로 목소리를 담는다. 올리면 파형이 뜨고 전사가 끝나면 글귀가 채워진다.
   const onAudio = async (blob: Blob) => {
     setBusy(true);
     try { await uploadAudio(m.id, blob); }
@@ -30,7 +30,7 @@ export default function MomentCard({ m, projectId, stamp, onUpdate }:
           clearInterval(poll); setBusy(false);
           onUpdate({ caption: s.caption, transcript: s.transcript, analysis_status: s.analysis_status });
         }
-      } catch { /* 일시 오류면 다음 틱에 재시도, tries가 상한 */ }
+      } catch { /* 일시적인 오류면 다음 차례에 다시 시도한다 */ }
     }, 2000);
     timers.current.push(poll);
   };
