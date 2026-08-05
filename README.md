@@ -115,6 +115,5 @@ python scripts/sweetbook_ops.py webhook register https://…/api/v1/webhooks/swe
 | 문서 | 내용 |
 |---|---|
 | [`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) | 처음 보는 사람이 읽는 순서대로 정리한 파일 지도 |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 순간 담기와 목소리 캡션, 주문의 세 가지 요청 여정 |
 | [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md) | 연동하며 겪은 것 |
 | [`CLAUDE.md`](CLAUDE.md) | 스택과 테스트 명령, 코드 컨벤션 |
