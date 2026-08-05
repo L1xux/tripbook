@@ -2,13 +2,20 @@
 
 여행 사진과 **그때 내가 한 목소리 한 마디**가, 한 권의 책이 됩니다.
 
-사진을 올리고 목소리로 그 순간을 이야기하면 AI가 전사(Whisper)한 뒤 **말한 원문을 다듬어**
-캡션(글귀)으로 담고 — 지어내지 않습니다 — Sweetbook Book Print API로 실물 책을
-나 자신과 **선물 수령인**에게 주문하는 **모바일 퍼스트 웹 서비스**입니다.
+사진을 올리고 목소리로 그 순간을 이야기하면 Whisper가 전사하고 AI가 말한 원문을 다듬어 글귀로 담습니다.
+없는 말은 지어내지 않습니다. 다 담은 뒤에는 Sweetbook Book Print API로 실물 책을 만들어
+나와 동행자에게 보냅니다. 모바일에서 쓰는 웹 서비스입니다.
 
-> 이 레포는 **서비스이자 연동 기록**입니다. Book Print API를 외부 파트너 입장에서 처음부터 붙여
+> 이 레포는 서비스이자 연동 기록입니다. Book Print API를 외부 파트너 입장에서 처음부터 붙여
 > 실주문까지 완주했고, 그 과정에서 막힌 지점과 개선 제안을 문서로 남겼습니다.
 > → [연동 피드백](docs/SWEETBOOK_API_FEEDBACK.md) · [API 개선 제안](docs/BOOK_PRINT_API_PROPOSAL.md)
+
+## 시그니처 — "종이책을 펼치면, 그때 내 목소리가 흘러나온다"
+
+- 목소리가 담긴 순간에는 인쇄면에 QR이 함께 찍힙니다. 스캔하면 그때의 목소리가 그대로 재생됩니다.
+- AI는 사용자의 말을 다듬기만 합니다. 없던 사실이나 감정을 보태지 않습니다.
+- 여행 중에는 사진과 목소리, 감정을 계속 담고, 여행이 끝나면 그대로 한 권이 됩니다.
+- 같은 책을 동행자에게도 한 권 보낼 수 있습니다.
 
 ## Book Print API 연동 결과
 
@@ -20,66 +27,31 @@
 | 주문 취소·환불 `POST /orders/{uid}/cancel` | ✅ 제작 시작 전 전액 환불 |
 | 웹훅 수신 | ⬜ 미등록. 공개 HTTPS 주소를 확보하면 `PUT /webhooks/config` |
 
-## 이 레포에서 볼 수 있는 것
+## 워크플로우
 
-### Book Print API 연동·고도화
+![Tripbook 워크플로우](docs/workflow.svg)
 
-- 전 엔드포인트를 감싼 클라이언트 — [`sweetbook/client.py`](backend/app/sweetbook/client.py)
-- 책 조립 렌더러 — [`sweetbook/renderer.py`](backend/app/sweetbook/renderer.py)
-- 충전금·판형·웹훅 등록을 다루는 운영 CLI — [`sweetbook_ops.py`](backend/scripts/sweetbook_ops.py)
-- 파트너 입장에서 정리한 [연동 피드백](docs/SWEETBOOK_API_FEEDBACK.md)과 [개선 제안](docs/BOOK_PRINT_API_PROPOSAL.md)
+요청이 어느 파일을 거쳐 흐르는지는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)에 정리했습니다.
 
-### API 기반 클라이언트 앱·웹
+## 무엇을 다뤘나
 
-- React 19 + TypeScript 모바일 퍼스트 SPA — [`frontend/src`](frontend/src)
-- 화면 흐름: 서재 → 순간 담기 → 앨범 → 책 펼침면 → 주문·선물
+**Book Print API 연동과 고도화**
+판형 조회부터 책 조립, 견적, 주문, 취소, 웹훅까지 전 구간을 붙였습니다.
+결제성 API라 이중 차감을 막는 멱등 키를 요청 본문에서 만들고, 결제 직전에 잔액을 미리 대조합니다.
+충전금과 판형, 웹훅 등록을 다루는 운영 명령도 따로 두었습니다.
 
-### 인쇄·제작·배송 공정
+**인쇄와 제작, 배송 공정**
+주문 상태 11종의 전이를 그대로 따라갑니다.
+웹훅은 HMAC 서명으로 검증하고, 재전송으로 순서가 뒤바뀌어도 최신 상태를 되돌리지 않습니다.
+웹훅이 없는 동안에는 직접 조회로 상태를 채우되 호출량이 Rate Limit을 갉아먹지 않게 묶었습니다.
 
-- 주문 상태 11종의 전이 흐름 — [`routers/orders.py`](backend/app/routers/orders.py)
-- HMAC 서명 검증과 재전송 순서 가드를 갖춘 웹훅 수신
-- 제작 시작 전 주문 취소와 전액 환불
-- 웹훅이 없는 동안의 상태 폴백, Rate Limit을 고려한 조회 묶음
+**AI 파이프라인**
+Whisper로 전사하고 말투를 살려 글귀로 다듬습니다.
+편집이 실패하면 전사한 원문을 그대로 남깁니다. 침묵하거나 지어내지 않습니다.
 
-### AI 기반 서비스
-
-- Whisper 전사에서 캡션 편집까지의 파이프라인 — [`ai/caption.py`](backend/app/ai/caption.py)
-- 사용자가 말하지 않은 것은 쓰지 않는 창작 금지 불변식 `NO_INVENTION`
-
-### 개발 방식
-
-- Claude Code로 계획하고 TDD로 구현
-- 백엔드 테스트 63개, 프로젝트 규칙은 [`CLAUDE.md`](CLAUDE.md)
-
-## ✨ 시그니처 — "종이책을 펼치면, 그때 내 목소리가 흘러나온다"
-
-- **진짜 목소리가 실물 책에 산다.** 순간마다 인쇄면에 **QR**을 넣어, 스캔하면 공개 페이지 `/v/:id`에서
-  **그때의 목소리가 재생**된다. 앱 카드에서도 탭하면 내 녹음이 재생되고, 파형은 **Web Audio로 실제 진폭을
-  디코드**한 진짜 파형이다(장식용 아님).
-- **AI는 증폭하되 창작하지 않는다.** Whisper 전사 → OpenAI가 *말투 그대로* 캡션 편집(`NO_INVENTION`),
-  사진 감정 후보 제안(✨ 추천 칩), 캡션만으로 여행 **감정 아크** 요약 — 전부 사용자의 말에서만.
-- **여행 중 계속 담고**(사진+녹음+감정), 다 훑은 뒤 **책으로 만들기 → 주문·선물**로 자연스럽게 잇는다.
-- 벤치마크: Remento(목소리 QR 하드커버). 우리는 같은 훅을 **여행 세그먼트**로 가져왔다.
-
-## 어떻게 동작하나
-
-```
-[React SPA — 화면 흐름]
-  서재(홈) → 카드 덱 ⇄ 그리드 → 순간(글귀+음성 파형) → 책 펼침면 → 주문·선물
-        │ fetch (SSE 없음)
-        ▼
-[FastAPI + SQLite]
-  photos.py ──BackgroundTasks──▶ analysis.py ──▶ OpenAI gpt-4o-mini (사진 감정 제안 → ✨ 추천 칩)
-  photos.py(음성 업로드) ──▶ stt.py ──▶ OpenAI Whisper(whisper-1, ko) 전사
-                              └─▶ caption.py ──▶ OpenAI gpt-4o-mini (원문 충실 캡션 편집, NO_INVENTION)
-  photos.py ──▶ GET /moments/{id}/audio (오디오 서빙) · GET /moments/{id} (공개 조회) ──▶ /v/:id 재생 페이지
-  projects.py ──▶ arc.py ──▶ OpenAI gpt-4o-mini (여행 감정 아크 요약, 캡션 기반)
-  orders.py ──▶ sweetbook/renderer.py ──▶ Sweetbook API (create→cover→contents+QR밴드→finalize→order×수령인)
-        ◀── webhook (HMAC 서명 검증 → 주문 상태 갱신)
-```
-
-비주얼은 확정 목업(필름/Retro, `.superpowers/brainstorm/*/content/design-v1.html`)을 단일 기준으로 옮겼습니다.
-자세한 요청 경로는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)를 보세요.
+**모바일 웹 클라이언트**
+React 19와 TypeScript로 만든 화면입니다.
+서재에서 시작해 순간을 담고, 앨범을 넘겨보다 책으로 만들어 주문까지 한 흐름으로 이어집니다.
 
 ## 실행 방법
 
@@ -88,74 +60,64 @@
 ```bash
 cd backend
 pip install -r requirements.txt
-cp ../.env.example .env   # backend/.env에 둔다(설정 로딩이 실행 디렉터리 기준)
-                          # 키: OPENAI_API_KEY(캡션·감정·Whisper 전사), SWEETBOOK_API_KEY, SWEETBOOK_ENV,
-                          #     SWEETBOOK_WEBHOOK_SECRET(웹훅 서명 검증), PUBLIC_WEB_BASE
-uvicorn app.main:app --reload --port 8273   # http://localhost:8273
+cp ../.env.example .env
+uvicorn app.main:app --reload --port 8273
 ```
+
+`.env`는 실행 디렉터리 기준으로 읽으므로 `backend/.env`에 둡니다.
+키는 `OPENAI_API_KEY`, `SWEETBOOK_API_KEY`, `SWEETBOOK_ENV`, `SWEETBOOK_WEBHOOK_SECRET`, `PUBLIC_WEB_BASE`입니다.
 
 ### 프론트엔드
 
 ```bash
 cd frontend
 npm install
-npm run dev -- --port 5273   # http://localhost:5273  (VITE_API_BASE=http://localhost:8273)
+VITE_API_BASE=http://localhost:8273 npm run dev -- --port 5273
 ```
 
-### 로컬에서 바로 눌러보기 (데모 여행 시드)
+### 데모 여행으로 바로 눌러보기
 
-백엔드·프론트를 띄운 뒤, 사진·글귀·감정·재생 가능한 음성·감정 아크·주문 현황이 다 채워진
-데모 여행을 만들어 전 화면을 눌러볼 수 있다(AI/실키 불필요):
+사진과 글귀, 감정, 재생 가능한 음성, 감정 아크, 주문 현황이 다 채워진 여행을 만듭니다.
+AI 키나 Sweetbook 키가 없어도 전 화면을 눌러볼 수 있습니다.
 
 ```bash
 cd backend; python scripts/seed_demo.py
-# 출력된 URL을 브라우저에서 연다:
-#   앨범:      http://localhost:5273/p/<id>     (덱·글귀·파형·그리드·책·주문현황)
-#   순간 담기:  http://localhost:5273/p/<id>/add
-#   공개 재생:  http://localhost:5273/v/<moment-id>   (인쇄 QR 목적지)
 ```
 
-> 판형·템플릿 uid는 `backend/app/config.py`의 설정이 단일 출처입니다(프론트는 값을 들고 있지 않습니다).
-> 단가·판형명은 `GET /book-specs`로 그때그때 받아옵니다 — 다른 판형을 쓰려면 설정 3줄만 바꾸면 됩니다.
+출력된 주소에서 앨범과 순간 담기, 공개 재생 페이지를 열 수 있습니다.
 
-### 테스트 / E2E
+판형과 템플릿 uid는 `backend/app/config.py`의 설정이 단일 출처입니다.
+단가와 판형명은 `GET /book-specs`로 그때그때 받아오므로, 다른 판형을 쓰려면 설정 세 줄만 바꾸면 됩니다.
+
+### 테스트
 
 ```bash
-cd backend;  python -m pytest tests/ -v      # 백엔드 63개 테스트 (실키 불필요 — 전부 모킹)
+cd backend;  python -m pytest tests/ -v
 cd frontend; npm test && npm run build
-cd backend;  python scripts/demo_e2e.py      # uvicorn 실행 중 + 실키 필요
 ```
 
-### Sweetbook 운영·점검 (실키 필요)
+백엔드 테스트 63개는 외부 호출을 전부 모킹해 실키 없이 돕니다.
+실키로 전 구간을 돌려보려면 서버를 띄운 뒤 `python scripts/demo_e2e.py`를 실행합니다.
+
+### Sweetbook 운영·점검
+
+실키가 필요합니다.
 
 ```bash
 cd backend
-python scripts/sweetbook_ops.py credits            # 충전금 잔액 / transactions, charge
-python scripts/sweetbook_ops.py specs              # 판형·계약 단가 / templates, books
+python scripts/sweetbook_ops.py credits
+python scripts/sweetbook_ops.py specs
 python scripts/sweetbook_ops.py webhook register https://…/api/v1/webhooks/sweetbook
 ```
 
-## Claude Code와 함께 만든 과정
-
-이 프로젝트는 계획서를 태스크 단위로 TDD(실패하는 테스트 → 구현 → 통과 → 커밋)로 진행했습니다.
-초기(`plans/2026-07-21-tripbook.md`, 무드 선택→집필)에서 **"목소리 캡션 포토북 + 선물 주문"으로 피벗**했고,
-디자인을 목업으로 반복 확정한 뒤 v2를 백엔드(`plans/…-v2-backend.md`)·프론트엔드(`plans/…-v2-frontend.md`)
-두 계획으로 나눠 구현했습니다. [`CLAUDE.md`](CLAUDE.md)에 프로젝트 규칙(3줄 docstring, CODE_TOUR 갱신, 커밋 컨벤션)이 있습니다.
-
-**AI가 틀렸고 사람이 잡은 지점** (git 히스토리에 남아 있음):
-
-- `8bba1a2` — 계획 초안이 리사이즈본만 저장하게 되어 있었음. 인쇄에는 원본급 해상도(300dpi)가
-  필요하다는 지적으로 **원본(인쇄용)과 리사이즈본(AI 분석용) 분리 저장**으로 수정.
-- `8b82209` — Anthropic 키를 bare env에서 읽어 `.env` 설정과 어긋남 → 앱 settings 경유로 수정.
-- `edfc768` — 테스트 conftest의 스코프 없는 monkeypatch와 EventBus 구독자 누수 수정.
-- `1ad7214` — 불필요한 socketpair 워크어라운드를 conftest에서 제거.
+`transactions`, `charge`, `templates`, `books`, `order`, `cancel` 명령도 있습니다.
 
 ## 문서
 
 | 문서 | 내용 |
 |---|---|
-| [`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) | 처음 보는 사람용 — 읽는 순서대로 파일 지도 |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 사진 업로드/집필/주문, 3가지 요청 여정 |
-| [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md) | Sweetbook 연동 피드백 (잘된 점/헤맨 점/제안) |
+| [`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) | 처음 보는 사람이 읽는 순서대로 정리한 파일 지도 |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 순간 담기와 목소리 캡션, 주문의 세 가지 요청 여정 |
+| [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md) | 연동하며 겪은 것과 개선 제안 |
 | [`docs/BOOK_PRINT_API_PROPOSAL.md`](docs/BOOK_PRINT_API_PROPOSAL.md) | 파트너 온보딩 관점의 API 개선 제안 |
-| [`CLAUDE.md`](CLAUDE.md) | 프로젝트 규칙 (스택·테스트·컨벤션) |
+| [`CLAUDE.md`](CLAUDE.md) | 스택과 테스트 명령, 코드 컨벤션 |
