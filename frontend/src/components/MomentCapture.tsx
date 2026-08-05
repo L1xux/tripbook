@@ -8,6 +8,15 @@ import Camera from "./Camera";
 
 const EMOTIONS = ["설렘", "행복", "평온", "뭉클", "신남", "아쉬움"];
 
+// 감정 제안은 "AI가 판별했다"가 아니라 "순간이 말을 건다"로 말한다 —
+// 이 제품에서 AI는 증폭하되 창작하지 않으며, 사용자의 순간을 분석 대상으로 만들지 않는다.
+// 한글 조사: 받침이 있으면 "이라고", 없으면 "라고" (감정 태그가 늘어나도 어색해지지 않게).
+const saidAs = (w: string) => {
+  const code = w.charCodeAt(w.length - 1) - 0xac00;
+  const hasFinalConsonant = code >= 0 && code <= 11171 && code % 28 !== 0;
+  return `“${w}”${hasFinalConsonant ? "이" : ""}라고`;
+};
+
 export default function MomentCapture({ projectId, initialMoments }: { projectId: string; initialMoments: Moment[] }) {
   const [moments, setMoments] = useState<Moment[]>(initialMoments);
   const [error, setError] = useState("");
@@ -138,14 +147,16 @@ export default function MomentCapture({ projectId, initialMoments }: { projectId
             ) : (
               <p className="capture-cap muted">녹음하면 여기에 글귀가 생겨요</p>
             )}
-            {!m.emotion && m.suggested_emotion && <p className="ai-hint">✨ AI가 이 순간을 “{m.suggested_emotion}”으로 봤어요 — 탭해서 선택</p>}
+            {!m.emotion && m.suggested_emotion && (
+              <p className="ai-hint">이 순간은 {saidAs(m.suggested_emotion)} 말하는 것 같아요 — 탭해서 담기</p>
+            )}
             <div className="emotions">
               {EMOTIONS.map((e) => {
                 const on = m.emotion === e;
                 const suggested = !m.emotion && m.suggested_emotion === e;
                 return (
                   <button key={e} className={"emotion" + (on ? " on" : "") + (suggested ? " suggested" : "")} onClick={() => setEmotion(m, e)}>
-                    {suggested ? "✨ " : ""}{e}
+                    {suggested ? `‘${e}’` : e}
                   </button>
                 );
               })}
