@@ -268,13 +268,35 @@ def cancel_order(project_id: str, body: CancelBody, db: Session = Depends(get_db
     return {"ok": True, "cancelled": len(targets)}
 
 
+REMOTE_REFRESH_INTERVAL_SEC = 30
+_last_remote_refresh: dict[str, float] = {}
+
+
+def _may_ask_sweetbook(project_id: str) -> bool:
+    """주문 현황 화면은 5초마다 폴링한다. 원격 조회까지 그 주기로 내보내면 주문 2건짜리
+    창 하나가 분당 24회를 써서 Rate Limit(general 300 req/분, API Key 단위)을 금방 갉아먹는다.
+    상태는 본래 웹훅이 밀어주는 값이므로, 원격 확인만 30초에 한 번으로 묶는다
+    (웹훅이 갱신한 DB 값은 5초 폴링에 그대로 실려 나가 체감은 같다).
+    실패했더라도 시각을 갱신한다 — Sweetbook이 아플 때 재시도로 몰아치지 않기 위해."""
+    now = time.monotonic()
+    last = _last_remote_refresh.get(project_id)
+    if last is not None and now - last < REMOTE_REFRESH_INTERVAL_SEC:
+        return False
+    if len(_last_remote_refresh) > 1000:  # 프로세스 수명 동안 무한히 쌓이지 않게 지난 항목만 청소
+        stale = now - REMOTE_REFRESH_INTERVAL_SEC
+        for key in [k for k, v in _last_remote_refresh.items() if v < stale]:
+            _last_remote_refresh.pop(key, None)
+    _last_remote_refresh[project_id] = now
+    return True
+
+
 def _refresh_from_sweetbook(db, project: Project) -> None:
     """웹훅이 등록되기 전까지는 상태가 PAID에서 멈춘다 — 진행 중인 주문만 원격에서 당겨온다.
     Sweetbook이 죽어도 화면은 마지막으로 아는 상태로 떠야 하므로 실패는 조용히 넘긴다."""
     rows = [(project, project.sweetbook_order_id)] + [(r, r.sweetbook_order_id) for r in project.recipients]
     pending = [(row, uid) for row, uid in rows
                if uid and (row.order_status or "") not in TERMINAL_STATUSES and row.order_status != "DELIVERED"]
-    if not pending:
+    if not pending or not _may_ask_sweetbook(project.id):
         return
     try:
         client = get_sweetbook_client()

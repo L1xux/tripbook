@@ -177,6 +177,33 @@ def test_status_falls_back_to_get_order_when_webhook_silent(client, monkeypatch)
     assert st2["order_status"] == "IN_PRODUCTION"   # 웹훅과 같은 순서 가드가 걸린다
 
 
+def test_status_polling_does_not_hammer_sweetbook(client, monkeypatch):
+    """화면은 5초마다 폴링한다 — 원격 조회까지 그 주기로 나가면 창 하나가 분당 24회를 쓴다.
+    (general 정책 300 req/분) 원격 조회는 창 주기와 분리해 묶는다."""
+    import app.routers.orders as orders
+    state = {"balance": 900000, "sufficient": True}
+    pid, res = _ordered_project(client, monkeypatch, state)
+    assert res.status_code == 200
+
+    def remote_calls():
+        return len([c for c in state["calls"] if c.startswith("GET /v1/orders/")])
+
+    client.get(f"/api/v1/projects/{pid}/order/status")
+    first = remote_calls()
+    assert first > 0                       # 첫 조회는 원격을 확인한다
+
+    for _ in range(5):                     # 화면이 열려 있는 25초 동안의 폴링
+        client.get(f"/api/v1/projects/{pid}/order/status")
+    assert remote_calls() == first         # 추가 호출 없음
+
+    # 간격이 지나면 다시 확인한다
+    orders._last_remote_refresh[pid] = 0.0
+    state["remote_status"] = "IN_PRODUCTION"
+    body = client.get(f"/api/v1/projects/{pid}/order/status").json()
+    assert remote_calls() > first
+    assert body["order_status"] == "IN_PRODUCTION"
+
+
 def test_status_fallback_survives_sweetbook_outage(client, monkeypatch):
     """원격 조회가 실패해도 주문 현황 화면은 떠야 한다(마지막으로 아는 상태로)."""
     state = {"balance": 900000, "sufficient": True}
