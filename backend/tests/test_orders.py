@@ -156,6 +156,40 @@ def test_changed_shipping_gets_new_idempotency_key(client, monkeypatch):
     assert len(keys) == 2 and keys[0] != keys[1]  # 본문이 달라졌으니 키도 달라야 한다
 
 
+def test_patch_recipient_updates_fields(client, monkeypatch):
+    """주문 전에는 수령인 정보를 고칠 수 있다 — 삭제+재등록(중복 주문 위험) 대신 수정."""
+    pid = _project_with_photo(client, monkeypatch)
+    rid = client.post(f"/api/v1/projects/{pid}/recipients",
+                      json={"name": "엄마", "address": "서울"}).json()["id"]
+    res = client.patch(f"/api/v1/recipients/{rid}",
+                       json={"address": "부산 해운대", "postal_code": "48099", "phone": "010-1111-2222"})
+    assert res.status_code == 200
+    got = next(r for r in client.get(f"/api/v1/projects/{pid}").json()["recipients"] if r["id"] == rid)
+    assert got["address"] == "부산 해운대"
+    assert got["postal_code"] == "48099"
+    assert got["name"] == "엄마"  # 보내지 않은 필드는 유지
+
+
+def test_ordered_recipient_cannot_be_changed_or_deleted(client, monkeypatch):
+    """이미 주문된 수령인은 수정·삭제 모두 409 — 책은 인쇄되는데 주소만 바뀌거나 추적이 사라지는 것을 막는다."""
+    import app.routers.orders as orders
+    global _ORDER_SEQ
+    _ORDER_SEQ = iter(["O-me-g", "O-mom-g"])
+    monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)
+    pid = _project_with_photo(client, monkeypatch)
+    rid = client.post(f"/api/v1/projects/{pid}/recipients",
+                      json={"name": "엄마", "address": "서울"}).json()["id"]
+    assert client.post(f"/api/v1/projects/{pid}/order",
+                       json={"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산"}}).status_code == 200
+
+    assert client.patch(f"/api/v1/recipients/{rid}", json={"address": "다른 주소"}).status_code == 409
+    assert client.delete(f"/api/v1/recipients/{rid}").status_code == 409
+    # 수령인은 그대로 남아 주문 추적이 유지된다
+    got = client.get(f"/api/v1/projects/{pid}").json()["recipients"]
+    assert [r["id"] for r in got] == [rid]
+    assert got[0]["address"] == "서울"
+
+
 def test_order_requires_photos(client, monkeypatch):
     import app.routers.orders as orders
     monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)

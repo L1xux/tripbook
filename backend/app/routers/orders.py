@@ -31,6 +31,14 @@ class RecipientBody(BaseModel):
     gift_message: str | None = None
 
 
+class RecipientPatch(BaseModel):
+    name: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    postal_code: str | None = None
+    gift_message: str | None = None
+
+
 @router.post("/projects/{project_id}/recipients", status_code=201)
 def add_recipient(project_id: str, body: RecipientBody, db: Session = Depends(get_db)):
     get_project_or_404(db, project_id)
@@ -39,9 +47,27 @@ def add_recipient(project_id: str, body: RecipientBody, db: Session = Depends(ge
     return {"id": r.id}
 
 
+def _mutable_recipient_or_409(db, recipient_id: str) -> Recipient:
+    """이미 Sweetbook에 주문이 나간 수령인은 바꿀 수 없다 — 책은 옛 주소로 인쇄되는데
+    로컬만 바뀌거나(수정), 배송 추적이 사라지는(삭제) 것을 막는다."""
+    r = get_or_404(db, Recipient, recipient_id, "recipient")
+    if r.sweetbook_order_id:
+        raise HTTPException(409, "이미 인쇄가 시작된 선물이라 변경할 수 없어요")
+    return r
+
+
+@router.patch("/recipients/{recipient_id}")
+def patch_recipient(recipient_id: str, body: RecipientPatch, db: Session = Depends(get_db)):
+    r = _mutable_recipient_or_409(db, recipient_id)
+    for k, v in body.model_dump(exclude_none=True).items():
+        setattr(r, k, v)
+    db.commit()
+    return {"ok": True}
+
+
 @router.delete("/recipients/{recipient_id}")
 def remove_recipient(recipient_id: str, db: Session = Depends(get_db)):
-    r = get_or_404(db, Recipient, recipient_id, "recipient")
+    r = _mutable_recipient_or_409(db, recipient_id)
     db.delete(r); db.commit()
     return {"ok": True}
 

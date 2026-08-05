@@ -54,6 +54,8 @@ export const reorderMoments = (id: string, photo_ids: string[]) =>
 export const addRecipient = (id: string, b: { name: string; address: string; phone?: string; postal_code?: string; gift_message?: string }) =>
   req<{ id: string }>(`/api/v1/projects/${id}/recipients`, { method: "POST", body: JSON.stringify(b) });
 export const removeRecipient = (rid: string) => req(`/api/v1/recipients/${rid}`, { method: "DELETE" });
+export const patchRecipient = (rid: string, b: { name?: string; address?: string; phone?: string; postal_code?: string; gift_message?: string }) =>
+  req(`/api/v1/recipients/${rid}`, { method: "PATCH", body: JSON.stringify(b) });
 export const createOrder = (id: string, spec: object, shipping: object) =>
   req<{ book_uid: string; orders: { to: string; order_uid: string }[] }>(`/api/v1/projects/${id}/order`,
     { method: "POST", body: JSON.stringify({ spec, shipping }) });

@@ -2,7 +2,7 @@
  *  누가 호출: screens/Album(order 뷰).
  *  무엇을 호출: api(addRecipient/createOrder). */
 import { useRef, useState } from "react";
-import { addRecipient, removeRecipient, createOrder, type Project } from "../api";
+import { addRecipient, removeRecipient, patchRecipient, createOrder, type Project } from "../api";
 
 const BOOK_PRICE = 12600; // SQUAREBOOK_HC 기본가 — 배송비는 결제 시 계산
 // Sweetbook Sandbox 확정값: 스퀘어 하드커버(SQUAREBOOK_HC) + 표지 "일기장A"(taupe/명조, 우리 디자인과 일치) + 공용 빈내지
@@ -24,6 +24,9 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
   // 이미 등록한 수령인 id. 재시도 시 중복 추가를 막고, 선물을 도로 끄면 등록을 취소하는 데 쓴다 —
   // 등록만 하고 끝나면 백엔드가 수령인 몫까지 주문해 화면(1권)과 실제(2권)가 어긋난다.
   const giftRid = useRef<string | null>(null);
+  // 마지막으로 서버에 보낸 선물 정보 스냅샷 — 값이 안 바뀐 재시도에 PATCH를 보내지 않기 위해.
+  // (선물 주문이 이미 성공한 부분 실패 재시도에서, 불필요한 PATCH가 409로 전체를 막는 것 방지)
+  const giftSent = useRef<string | null>(null);
 
   const copies = gift ? 2 : 1;
   const subtotal = BOOK_PRICE * copies;
@@ -33,15 +36,22 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
     if (gift && (!giftName || !giftPhone || !giftPostal || !giftAddr)) return setError("선물 받는 분의 정보도 모두 적어주세요");
     setError(""); setBusy(true);
     try {
-      // 선물을 도로 껐으면 이전 시도에서 등록한 수령인을 취소한다(안 하면 몰래 2권 주문됨)
+      // 선물을 도로 껐으면 이전 시도에서 등록한 수령인을 취소한다(안 하면 몰래 2권 주문됨).
+      // 이미 인쇄가 시작된 수령인이면 백엔드가 409로 거부한다 — 그 메시지를 그대로 보여준다.
       if (!gift && giftRid.current) {
         await removeRecipient(giftRid.current);
         giftRid.current = null;
       }
-      // 수령인은 한 번만 추가한다 — 주문이 부분 실패해 재시도할 때 중복 수령인이 생기지 않도록
+      // 수령인은 한 번만 추가한다 — 주문이 부분 실패해 재시도할 때 중복 수령인이 생기지 않도록.
+      // 재시도 전에 선물 정보를 고쳤으면 삭제+재등록(중복 주문 위험) 대신 수정으로 반영한다.
+      const giftInfo = { name: giftName, address: giftAddr, phone: giftPhone, postal_code: giftPostal };
+      const snapshot = JSON.stringify(giftInfo);
       if (gift && !giftRid.current) {
-        const r = await addRecipient(project.id, { name: giftName, address: giftAddr, phone: giftPhone, postal_code: giftPostal });
-        giftRid.current = r.id;
+        const r = await addRecipient(project.id, giftInfo);
+        giftRid.current = r.id; giftSent.current = snapshot;
+      } else if (gift && giftRid.current && snapshot !== giftSent.current) {
+        await patchRecipient(giftRid.current, giftInfo);
+        giftSent.current = snapshot;
       }
       const res = await createOrder(project.id, BOOK_SPEC, { name, phone, postalCode: postal, address });
       setDone(res);

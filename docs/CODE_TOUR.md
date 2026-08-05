@@ -15,7 +15,7 @@
 
 6. `backend/app/routers/projects.py` — 프로젝트 생성/조회. **여기서 볼 것:** `get_project_or_404`(다른 라우터가 공용으로 씀).
 7. `backend/app/routers/photos.py` — 사진 업로드/음성 업로드/수정/정렬 + 오디오 서빙/공개 순간 조회. **여기서 볼 것:** 원본+리사이즈 저장 후 `analysis.analyze_batch` 백그라운드 실행, `upload_audio`가 `caption.transcribe_and_caption`을 백그라운드로 건다. `moment_audio`(바이트 스니핑으로 content-type), `get_moment`(공개 재생 페이지용, 인증 없음).
-8. `backend/app/routers/orders.py` — 수령인 등록/주문 생성/상태/웹훅. **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `_place_order`를 반복 호출(각각 `Idempotency-Key` — 타임아웃 재시도의 이중 차감 차단), `ERR_INSUFFICIENT_CREDIT` → 402 / 그 외 `SweetbookError` → 502 매핑. 웹훅은 `_verify_webhook`(HMAC-SHA256 + 타임스탬프 만료)과 `_should_apply`(늦게 도착한 과거 이벤트가 최신 상태를 되돌리지 않게 하는 `STATUS_RANK` 가드).
+8. `backend/app/routers/orders.py` — 수령인 등록/수정/삭제·주문 생성/상태·웹훅. 수령인 수정·삭제는 주문 전까지만(`_mutable_recipient_or_409` — 인쇄 시작 후 주소 어긋남·추적 유실 방지). **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `_place_order`를 반복 호출(각각 `Idempotency-Key` — 타임아웃 재시도의 이중 차감 차단), `ERR_INSUFFICIENT_CREDIT` → 402 / 그 외 `SweetbookError` → 502 매핑. 웹훅은 `_verify_webhook`(HMAC-SHA256 + 타임스탬프 만료)과 `_should_apply`(늦게 도착한 과거 이벤트가 최신 상태를 되돌리지 않게 하는 `STATUS_RANK` 가드).
 
 ## AI 파이프라인
 
