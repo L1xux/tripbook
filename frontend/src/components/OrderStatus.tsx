@@ -4,9 +4,12 @@
 import { useEffect, useState } from "react";
 import { getOrderStatus } from "../api";
 
+// Sweetbook orderStatus enum 전체(docs/operations/order-status) — 서버가 주는 값 그대로 들어온다.
 const LABEL: Record<string, string> = {
-  PAID: "결제 완료", ORDERED: "주문 접수", PRINTING: "인쇄 중",
-  SHIPPING: "배송 중", DELIVERED: "배송 완료", CANCELLED: "취소됨",
+  PAID: "주문 완료", PDF_READY: "인쇄 준비 중", CONFIRMED: "제작 확정",
+  IN_PRODUCTION: "인쇄 중", COMPLETED: "제작 완료", PRODUCTION_COMPLETE: "제작 완료",
+  SHIPPED: "배송 중", DELIVERED: "배송 완료",
+  CANCELLED: "취소됨", CANCELLED_REFUND: "취소됨 (환불)", ERROR: "오류",
 };
 const label = (s: string | null) => (s ? LABEL[s] ?? s : "대기 중");
 

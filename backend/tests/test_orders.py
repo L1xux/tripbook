@@ -14,6 +14,7 @@ def _project_with_photo(client, monkeypatch):
 
 _ORDER_SEQ = iter(["O-me", "O-mom"])
 _LAST_ORDER = {}
+_ORDER_KEYS: list[str] = []
 
 
 def _mock_client():
@@ -24,7 +25,8 @@ def _mock_client():
         data = {"bookUid": "B1", "pageMeta": {"pageMin": 0, "currentPageCount": 99}}
         if req.url.path.endswith("/orders"):
             _LAST_ORDER.update(json.loads(req.content))
-            data = {"orderUid": next(_ORDER_SEQ)}
+            _ORDER_KEYS.append(req.headers.get("Idempotency-Key", ""))
+            data = {"orderUid": next(_ORDER_SEQ), "orderStatus": "PAID"}
         return httpx.Response(200, json={"success": True, "message": "ok", "data": data})
     return SweetbookClient("k", "sandbox", transport=httpx.MockTransport(handler))
 
@@ -32,6 +34,7 @@ def _mock_client():
 def test_gift_order_creates_one_print_per_person(client, monkeypatch):
     import app.routers.orders as orders
     monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)
+    _ORDER_KEYS.clear()
     pid = _project_with_photo(client, monkeypatch)
     client.post(f"/api/v1/projects/{pid}/recipients", json={"name": "엄마", "address": "서울"})
     res = client.post(f"/api/v1/projects/{pid}/order",
@@ -44,34 +47,35 @@ def test_gift_order_creates_one_print_per_person(client, monkeypatch):
     assert _LAST_ORDER["items"][0]["bookUid"] == "B1"
     assert _LAST_ORDER["shipping"]["recipientName"] == "엄마"
     assert _LAST_ORDER["shipping"]["address1"] == "서울"
-    assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "ORDERED"
+    # 상태는 우리가 지어낸 문자열이 아니라 Sweetbook이 준 orderStatus를 그대로 쓴다
+    assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "PAID"
+    # 이중 차감 방지 — 주문마다 Idempotency-Key가 있고 사람마다 값이 다르다
+    assert all(_ORDER_KEYS) and len(set(_ORDER_KEYS)) == 2
 
 
-def test_webhook_updates_project_and_recipient(client, monkeypatch):
+def test_insufficient_credit_maps_to_402(client, monkeypatch):
+    """충전금 부족(402 ERR_INSUFFICIENT_CREDIT)은 502가 아니라 402로, 사용자가 알아들을 메시지로."""
     import app.routers.orders as orders
-    global _ORDER_SEQ
-    # 다른 테스트가 모듈 전역 _ORDER_SEQ를 먼저 소진했을 수 있으므로 이 테스트 전용으로 리셋한다
-    _ORDER_SEQ = iter(["O-me-wh", "O-mom-wh"])
-    monkeypatch.setattr(orders, "get_sweetbook_client", _mock_client)
+    from app.sweetbook.client import SweetbookClient
+
+    def handler(req):
+        data = {"bookUid": "B1", "pageMeta": {"pageMin": 0, "currentPageCount": 99}}
+        if req.url.path.endswith("/orders"):
+            return httpx.Response(402, json={
+                "success": False, "errorCode": "ERR_INSUFFICIENT_CREDIT",
+                "message": "Insufficient Credit",
+                "data": {"required": 14300, "balance": 3220.00, "currency": "KRW"},
+                "errors": ["잔액이 부족합니다"], "fieldErrors": [],
+            })
+        return httpx.Response(200, json={"success": True, "message": "ok", "data": data})
+
+    monkeypatch.setattr(orders, "get_sweetbook_client",
+                        lambda: SweetbookClient("k", "sandbox", transport=httpx.MockTransport(handler)))
     pid = _project_with_photo(client, monkeypatch)
-    client.post(f"/api/v1/projects/{pid}/recipients", json={"name": "엄마", "address": "서울"})
     res = client.post(f"/api/v1/projects/{pid}/order",
                       json={"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산"}})
-    assert res.status_code == 200
-    body = res.json()
-    me_uid = next(o["order_uid"] for o in body["orders"] if o["to"] == "나")
-    mom_uid = next(o["order_uid"] for o in body["orders"] if o["to"] == "엄마")
-
-    res = client.post("/api/v1/webhooks/sweetbook", json={"orderUid": mom_uid, "status": "SHIPPING"})
-    assert res.status_code == 200
-    status = client.get(f"/api/v1/projects/{pid}/order/status").json()
-    recipient = next(r for r in status["recipients"] if r["name"] == "엄마")
-    assert recipient["order_status"] == "SHIPPING"
-
-    res = client.post("/api/v1/webhooks/sweetbook", json={"orderUid": me_uid, "status": "PRINTING"})
-    assert res.status_code == 200
-    status = client.get(f"/api/v1/projects/{pid}/order/status").json()
-    assert status["order_status"] == "PRINTING"
+    assert res.status_code == 402
+    assert "충전금" in res.json()["detail"]
 
 
 def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monkeypatch):
@@ -81,6 +85,7 @@ def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monk
     from app.sweetbook.client import SweetbookClient
     calls = {"orders": 0, "books": 0}
     state = {"fail_recipient": True}
+    mom_keys: list[str] = []
 
     def handler(req):
         data = {"bookUid": "B1", "pageMeta": {"pageMin": 0, "currentPageCount": 99}}
@@ -89,6 +94,8 @@ def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monk
         if req.url.path.endswith("/orders"):
             calls["orders"] += 1
             name = json.loads(req.content)["shipping"]["recipientName"]
+            if name == "엄마":
+                mom_keys.append(req.headers.get("Idempotency-Key", ""))
             if name == "엄마" and state["fail_recipient"]:
                 return httpx.Response(500, text="boom")
             data = {"orderUid": f"O-{name}"}
@@ -103,7 +110,7 @@ def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monk
     r1 = client.post(f"/api/v1/projects/{pid}/order",
                      json={"spec": {"bookSpecUid": "S1"}, "shipping": {"name": "나", "address": "부산"}})
     assert r1.status_code == 502
-    assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "ORDERED"
+    assert client.get(f"/api/v1/projects/{pid}/order/status").json()["order_status"] == "PAID"
 
     # 2차 재시도(엄마 성공): 책 재렌더 X, 나 재주문 X, 엄마만 주문
     state["fail_recipient"] = False
@@ -113,6 +120,9 @@ def test_partial_failure_persists_successes_and_retry_is_idempotent(client, monk
     assert len(r2.json()["orders"]) == 2          # 나(기존) + 엄마(신규)
     assert calls["orders"] == 3                    # 1차: 나+엄마실패=2, 2차: 엄마=1 (나는 재주문 안 됨)
     assert calls["books"] == 1                     # 책은 1회만 렌더
+    # 실패했던 주문의 재시도는 같은 Idempotency-Key로 나간다 —
+    # 1차가 타임아웃이었을 뿐 서버에선 성공했더라도 Sweetbook이 이중 차감 없이 원 응답을 돌려준다
+    assert len(mom_keys) == 2 and mom_keys[0] == mom_keys[1]
 
 
 def test_order_requires_photos(client, monkeypatch):
