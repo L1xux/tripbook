@@ -1,12 +1,8 @@
 /** 주문 + 선물: 내 배송 입력 + (동행자에게) 선물 한 권 추가 → Sweetbook 주문. 완료 시 주문번호/상태.
  *  누가 호출: screens/Album(order 뷰).
  *  무엇을 호출: api(addRecipient/createOrder). */
-import { useRef, useState } from "react";
-import { addRecipient, removeRecipient, patchRecipient, createOrder, type Project } from "../api";
-
-const BOOK_PRICE = 12600; // SQUAREBOOK_HC 기본가 — 배송비는 결제 시 계산
-// Sweetbook Sandbox 확정값: 스퀘어 하드커버(SQUAREBOOK_HC) + 표지 "일기장A"(taupe/명조, 우리 디자인과 일치) + 공용 빈내지
-const BOOK_SPEC = { bookSpecUid: "SQUAREBOOK_HC", coverTemplateUid: "79yjMH3qRPly", contentTemplateUid: "2mi1ao0Z4Vxl" };
+import { useEffect, useRef, useState } from "react";
+import { addRecipient, removeRecipient, patchRecipient, createOrder, getBookSpec, type BookSpec, type Project } from "../api";
 
 export default function OrderSheet({ project, onViewStatus }: { project: Project; onViewStatus?: () => void }) {
   const [name, setName] = useState("");
@@ -27,9 +23,16 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
   // 마지막으로 서버에 보낸 선물 정보 스냅샷 — 값이 안 바뀐 재시도에 PATCH를 보내지 않기 위해.
   // (선물 주문이 이미 성공한 부분 실패 재시도에서, 불필요한 PATCH가 409로 전체를 막는 것 방지)
   const giftSent = useRef<string | null>(null);
+  const [spec, setSpec] = useState<BookSpec | null>(null);
+
+  // 판형명·단가는 Sweetbook 계약가 — 화면에 박아두면 단가가 바뀔 때 금액만 조용히 틀어진다.
+  // 순간 수만큼 페이지가 늘어나므로(최소 페이지 미만은 여백으로 패딩) 페이지 수를 함께 물어본다.
+  useEffect(() => { getBookSpec(project.photos.length).then(setSpec).catch(() => setSpec(null)); },
+            [project.photos.length]);
 
   const copies = gift ? 2 : 1;
-  const subtotal = BOOK_PRICE * copies;
+  const subtotal = spec ? spec.price * copies : null;
+  const won = (n: number) => `${n.toLocaleString()}원`;
 
   const submit = async () => {
     if (!name || !phone || !postal || !address) return setError("이름·연락처·우편번호·주소를 모두 적어주세요");
@@ -53,7 +56,7 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
         await patchRecipient(giftRid.current, giftInfo);
         giftSent.current = snapshot;
       }
-      const res = await createOrder(project.id, BOOK_SPEC, { name, phone, postalCode: postal, address });
+      const res = await createOrder(project.id, { name, phone, postalCode: postal, address });
       setDone(res);
     } catch (e) { setError(e instanceof Error ? e.message : "주문에 실패했어요"); } finally { setBusy(false); }
   };
@@ -109,14 +112,15 @@ export default function OrderSheet({ project, onViewStatus }: { project: Project
       </div>
 
       <div className="total">
-        <span>책 {copies}권</span><b>{subtotal.toLocaleString()}원</b>
+        <span>{spec ? `${spec.name} ${copies}권` : `책 ${copies}권`}</span>
+        <b>{subtotal === null ? "—" : won(subtotal)}</b>
       </div>
       <p className="ship-note">배송비는 결제 단계에서 계산돼요</p>
 
       {error && <p className="error-text">{error}</p>}
       <div className="bottom-bar">
         <button className="btn" style={{ width: "100%" }} disabled={busy} onClick={submit}>
-          {busy ? "책을 만드는 중…" : `주문하기 · ${subtotal.toLocaleString()}원`}
+          {busy ? "책을 만드는 중…" : subtotal === null ? "주문하기" : `주문하기 · ${won(subtotal)}`}
         </button>
       </div>
     </div>

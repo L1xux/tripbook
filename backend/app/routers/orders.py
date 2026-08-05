@@ -72,9 +72,42 @@ def remove_recipient(recipient_id: str, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
+@router.get("/book-spec")
+def book_spec(pages: int | None = None):
+    """우리가 파는 판형 하나의 이름·단가·템플릿 uid. 프론트가 값을 박아두지 않게 하는 단일 출처.
+    단가는 계약가라 캐시하지 않고 그때그때 Sweetbook에서 받아온다."""
+    s = get_settings()
+    try:
+        spec = get_sweetbook_client().get_book_spec(s.sweetbook_book_spec_uid)
+    except SweetbookError:
+        raise HTTPException(502, "판형 정보를 불러오지 못했습니다")
+
+    page_min = int(spec.get("pageMin") or 0)
+    increment = int(spec.get("pageIncrement") or 1) or 1
+    # 순간이 적으면 여백 페이지로 패딩해 인쇄되므로, 값은 언제나 pageMin 이상으로 계산한다
+    page_count = max(pages or page_min, page_min)
+    steps = max(0, (page_count - page_min)) // increment
+    price = int(spec.get("priceBase") or 0) + steps * int(spec.get("pricePerIncrement") or 0)
+    return {
+        "name": spec.get("name", ""),
+        "price": price,
+        "page_min": page_min,
+        "page_max": spec.get("pageMax"),
+        "page_increment": increment,
+        "spec": {"bookSpecUid": s.sweetbook_book_spec_uid,
+                 "coverTemplateUid": s.sweetbook_cover_template_uid,
+                 "contentTemplateUid": s.sweetbook_content_template_uid},
+    }
+
+
 class OrderBody(BaseModel):
-    spec: dict
+    # 판형·템플릿 uid는 서버 설정이 단일 출처 — 프론트가 안 보내면 그걸 쓴다(값이 어긋날 여지를 없앤다)
+    spec: dict | None = None
     shipping: dict
+
+
+class CancelBody(BaseModel):
+    reason: str = "사용자 요청"
 
 
 def _shipping(d: dict) -> dict:
@@ -103,6 +136,23 @@ def _idem_key(prefix: str, payload: dict) -> str:
     return f"{prefix}-{digest}"
 
 
+def _require_enough_credit(client, book_uid: str, shipping: dict, copies: int) -> None:
+    """견적으로 차감 예정액과 잔액을 미리 대조한다. 부족하면 아무것도 결제하지 않고 402.
+    견적 자체가 실패하면 막지 않는다 — 주문은 어차피 402를 정확히 돌려준다(가용성 우선)."""
+    if copies <= 0:
+        return
+    try:
+        est = client.estimate_order({"items": [{"bookUid": book_uid, "quantity": copies}],
+                                     "shipping": _shipping(shipping)})
+    except SweetbookError:
+        return
+    if est.get("creditSufficient") is False:
+        need, have = est.get("paidCreditAmount"), est.get("creditBalance")
+        raise HTTPException(402, f"충전금이 부족해 주문하지 못했어요 (필요 {need:,}원 · 잔액 {have:,}원)"
+                            if isinstance(need, (int, float)) and isinstance(have, (int, float))
+                            else "충전금이 부족해 주문하지 못했어요")
+
+
 def _place_order(client, payload: dict, key: str) -> dict:
     """주문 1건. 충전금 부족은 재시도해도 소용없으므로 즉시 402로 끊는다(다른 수령인도 같은 지갑)."""
     try:
@@ -125,8 +175,12 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
     # 책은 1회만 렌더 — 이미 만든 책이 있으면 재사용해 재시도 시 중복 렌더/주문을 막는다
     book_uid = project.sweetbook_book_id
     if not book_uid:
+        s = get_settings()
+        spec = body.spec or {"bookSpecUid": s.sweetbook_book_spec_uid,
+                             "coverTemplateUid": s.sweetbook_cover_template_uid,
+                             "contentTemplateUid": s.sweetbook_content_template_uid}
         try:
-            book_uid = TemplateRenderer(client).render(project, project.photos, body.spec)
+            book_uid = TemplateRenderer(client).render(project, project.photos, spec)
         except SweetbookError:
             raise HTTPException(502, "책 생성에 실패했습니다. 잠시 후 다시 시도해주세요")
         project.sweetbook_book_id = book_uid
@@ -137,6 +191,12 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
 
     # 나에게 1권 — 아직 주문되지 않았을 때만(재시도 안전)
     my_name = body.shipping.get("name", "나")
+
+    # 결제 직전 잔액 사전검증 — 한 권씩 결제하다 중간에 402가 나면 "일부만 인쇄"가 된다.
+    # 견적은 FINALIZED된 bookUid가 있어야 해서 렌더 뒤인 여기서만 부를 수 있다.
+    _require_enough_credit(client, book_uid, body.shipping,
+                           copies=(0 if project.sweetbook_order_id else 1)
+                           + sum(1 for r in project.recipients if not r.sweetbook_order_id))
     if not project.sweetbook_order_id:
         try:
             payload = _order_payload(book_uid, body.shipping, f"tripbook:{project.id}:me")
@@ -174,10 +234,73 @@ def create_order(project_id: str, body: OrderBody, db: Session = Depends(get_db)
     return {"book_uid": book_uid, "orders": orders}
 
 
+CANCELLABLE_STATUSES = {"PAID", "PDF_READY"}  # 그 이후는 제작이 시작돼 관리자 승인이 필요하다
+
+
+@router.post("/projects/{project_id}/order/cancel")
+def cancel_order(project_id: str, body: CancelBody, db: Session = Depends(get_db)):
+    """내 책과 선물 전부를 취소하고 충전금을 돌려받는다. 제작 시작 전(PAID·PDF_READY)에만 가능."""
+    project = get_project_or_404(db, project_id)
+    targets = [(project, project.sweetbook_order_id)] + [(r, r.sweetbook_order_id) for r in project.recipients]
+    targets = [(row, uid) for row, uid in targets if uid]
+    if not targets:
+        raise HTTPException(409, "아직 주문한 책이 없어요")
+
+    blocked = [row for row, _ in targets if (row.order_status or "PAID") not in CANCELLABLE_STATUSES]
+    if blocked:
+        raise HTTPException(409, "이미 제작이 시작돼 취소할 수 없어요")
+
+    client = get_sweetbook_client()
+    failed: list[str] = []
+    for row, uid in targets:
+        try:
+            res = client.cancel_order(uid, body.reason, idempotency_key=f"tripbook-cancel-{uid}")
+            row.order_status = res.get("orderStatus", "CANCELLED_REFUND")
+            row.sweetbook_order_id = None  # 취소된 주문 번호는 비워, 재주문이 새 주문으로 나가게 한다
+            db.commit()  # 각 성공을 즉시 보존 — 뒤가 실패해도 앞의 환불은 기록된다
+        except SweetbookError:
+            failed.append(getattr(row, "name", "내 책"))
+    if failed:
+        raise HTTPException(502, f"일부 취소에 실패했어요({', '.join(failed)}). 다시 시도해주세요")
+
+    project.status = "draft"  # 다시 담고 다시 주문할 수 있는 상태로
+    db.commit()
+    return {"ok": True, "cancelled": len(targets)}
+
+
+def _refresh_from_sweetbook(db, project: Project) -> None:
+    """웹훅이 등록되기 전까지는 상태가 PAID에서 멈춘다 — 진행 중인 주문만 원격에서 당겨온다.
+    Sweetbook이 죽어도 화면은 마지막으로 아는 상태로 떠야 하므로 실패는 조용히 넘긴다."""
+    rows = [(project, project.sweetbook_order_id)] + [(r, r.sweetbook_order_id) for r in project.recipients]
+    pending = [(row, uid) for row, uid in rows
+               if uid and (row.order_status or "") not in TERMINAL_STATUSES and row.order_status != "DELIVERED"]
+    if not pending:
+        return
+    try:
+        client = get_sweetbook_client()
+    except Exception:
+        return
+    changed = False
+    for row, uid in pending:
+        try:
+            remote = client.get_order(uid).get("orderStatus")
+        except SweetbookError:
+            continue
+        # 웹훅과 같은 순서 가드 — 조회가 과거 상태를 주더라도 뒤로 돌리지 않는다
+        if remote and _should_apply(row.order_status, remote):
+            row.order_status = remote
+            changed = True
+    if changed:
+        db.commit()
+
+
 @router.get("/projects/{project_id}/order/status")
 def order_status(project_id: str, db: Session = Depends(get_db)):
     project = get_project_or_404(db, project_id)
+    _refresh_from_sweetbook(db, project)
     return {"order_status": project.order_status,
+            "cancellable": bool(project.sweetbook_order_id)
+            and (project.order_status or "PAID") in CANCELLABLE_STATUSES,
             "recipients": [{"name": r.name, "order_status": r.order_status} for r in project.recipients]}
 
 

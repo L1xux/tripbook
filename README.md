@@ -80,9 +80,18 @@ cd backend; python scripts/seed_demo.py
 ### 테스트 / E2E
 
 ```bash
-cd backend;  python -m pytest tests/ -v      # 백엔드 47개 테스트 (실키 불필요 — 전부 모킹)
+cd backend;  python -m pytest tests/ -v      # 백엔드 62개 테스트 (실키 불필요 — 전부 모킹)
 cd frontend; npm test && npm run build
 cd backend;  python scripts/demo_e2e.py      # uvicorn 실행 중 + 실키 필요
+```
+
+### Sweetbook 운영·점검 (실키 필요)
+
+```bash
+cd backend
+python scripts/sweetbook_ops.py credits            # 충전금 잔액 / transactions, charge
+python scripts/sweetbook_ops.py specs              # 판형·계약 단가 / templates, books
+python scripts/sweetbook_ops.py webhook register https://…/api/v1/webhooks/sweetbook
 ```
 
 ## Claude Code와 함께 만든 과정

@@ -15,7 +15,7 @@
 
 6. `backend/app/routers/projects.py` — 프로젝트 생성/조회. **여기서 볼 것:** `get_project_or_404`(다른 라우터가 공용으로 씀).
 7. `backend/app/routers/photos.py` — 사진 업로드/음성 업로드/수정/정렬 + 오디오 서빙/공개 순간 조회. **여기서 볼 것:** 원본+리사이즈 저장 후 `analysis.analyze_batch` 백그라운드 실행, `upload_audio`가 `caption.transcribe_and_caption`을 백그라운드로 건다. `moment_audio`(바이트 스니핑으로 content-type), `get_moment`(공개 재생 페이지용, 인증 없음).
-8. `backend/app/routers/orders.py` — 수령인 등록/수정/삭제·주문 생성/상태·웹훅. 수령인 수정·삭제는 주문 전까지만(`_mutable_recipient_or_409` — 인쇄 시작 후 주소 어긋남·추적 유실 방지). **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `_place_order`를 반복 호출(각각 `Idempotency-Key` — 타임아웃 재시도의 이중 차감 차단), `ERR_INSUFFICIENT_CREDIT` → 402 / 그 외 `SweetbookError` → 502 매핑. 웹훅은 `_verify_webhook`(HMAC-SHA256 + 타임스탬프 만료)과 `_should_apply`(늦게 도착한 과거 이벤트가 최신 상태를 되돌리지 않게 하는 `STATUS_RANK` 가드).
+8. `backend/app/routers/orders.py` — 판형 조회·수령인 등록/수정/삭제·주문 생성/취소/상태·웹훅. `GET /book-spec`이 판형명·계약 단가·템플릿 uid의 단일 출처(프론트에 값을 박지 않는다), `_require_enough_credit`이 렌더 직후 견적으로 잔액을 미리 대조해 "일부만 인쇄"를 막고, `_refresh_from_sweetbook`이 웹훅 미등록 구간의 상태 폴백. 수령인 수정·삭제는 주문 전까지만(`_mutable_recipient_or_409` — 인쇄 시작 후 주소 어긋남·추적 유실 방지). **여기서 볼 것:** 책은 `TemplateRenderer.render`로 1회만 렌더하고 나+수령인마다 `_place_order`를 반복 호출(각각 `Idempotency-Key` — 타임아웃 재시도의 이중 차감 차단), `ERR_INSUFFICIENT_CREDIT` → 402 / 그 외 `SweetbookError` → 502 매핑. 웹훅은 `_verify_webhook`(HMAC-SHA256 + 타임스탬프 만료)과 `_should_apply`(늦게 도착한 과거 이벤트가 최신 상태를 되돌리지 않게 하는 `STATUS_RANK` 가드).
 
 ## AI 파이프라인
 
@@ -27,6 +27,8 @@
 13. `backend/app/imaging.py` — 이미지 리사이즈+EXIF 촬영일 추출. **여기서 볼 것:** MAX_EDGE=1100 선택 이유(비전 토큰 절감).
 
 ## Sweetbook 연동
+
+13b. `backend/scripts/sweetbook_ops.py` — 운영·점검 CLI(앱 흐름 밖의 API를 모아둔 곳). **여기서 볼 것:** `webhook register`(수신 URL 등록 + secretKey 1회 노출), `charge`(Sandbox 테스트 충전), `credits/transactions/specs/templates/books/order/cancel`.
 
 14. `backend/app/sweetbook/client.py` — Book Print API HTTP 클라이언트. **여기서 볼 것:** `{success, data, errorCode, errors}` 언랩(에러 봉투를 먼저 읽어야 `errorCode`를 잃지 않는다), `create_order`의 `Idempotency-Key`, transport 주입(테스트 모킹).
 15. `backend/app/sweetbook/renderer.py` — 책 조립 렌더러(create→cover→contents→finalize). **여기서 볼 것:** 순간 1개=내지 1페이지(`?breakBefore=page`로 누적), 인쇄용 원본 이미지를 multipart로 첨부, 판형 최소 페이지(24p) 미달 시 여백 패딩. `compose_page_image`가 오디오 있는 순간에 사진 아래 종이색 밴드+QR(→`/v/:id`)을 합성(시그니처). Sandbox 실검증은 `docs/SWEETBOOK_API_FEEDBACK.md`.
@@ -48,8 +50,8 @@
 24. `frontend/src/components/AudioWaveform.tsx` — **진짜** 음성 파형+재생. **여기서 볼 것:** 오디오를 Web Audio(`decodeAudioData`)로 디코드해 실제 진폭 막대, 탭 재생/진행, 실패 시 정적 막대 폴백.
 25. `frontend/src/screens/Voice.tsx` — 공개 재생 페이지 `/v/:id`(인쇄 QR 목적지). **여기서 볼 것:** `getMoment`로 사진+명조 글귀+파형, 없는 순간엔 "이 순간은 더 이상 없어요".
 26. `frontend/src/components/BookPreview.tsx` — 책 펼침면 미리보기(사진|명조 캡션). **여기서 볼 것:** "이대로 인쇄된다"는 신뢰를 주는 spread 레이아웃.
-27. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 연락처·우편번호 입력, 동행자 선물 토글 시 합계 2배, `BOOK_SPEC`(SQUAREBOOK_HC + 일기장A + 빈내지, Sandbox 확정값), 완료 후 `onViewStatus`.
-28. `frontend/src/components/OrderStatus.tsx` — 주문 현황(내 책+수령인별 인쇄/배송 상태). **여기서 볼 것:** `getOrderStatus` 폴링(웹훅으로 갱신), 상태 문자열 한국어 매핑.
+27. `frontend/src/components/OrderSheet.tsx` — 주문 + 선물. **여기서 볼 것:** 연락처·우편번호 입력, 동행자 선물 토글 시 합계 2배, 판형명·단가는 `getBookSpec`으로 서버에서 받아온다(uid·가격 하드코딩 없음), 완료 후 `onViewStatus`.
+28. `frontend/src/components/OrderStatus.tsx` — 주문 현황(내 책+수령인별 인쇄/배송 상태) + 주문 취소. **여기서 볼 것:** `getOrderStatus` 폴링, 상태 enum 한국어 매핑, 취소 버튼은 서버가 내려주는 `cancellable`일 때만(제작 시작 전).
 29. `frontend/src/components/MomentCapture.tsx` — 순간 담기 공용(카메라/갤러리 사진 + 녹음 + 감정 + ✨AI추천). **여기서 볼 것:** NewTrip·AddMoments가 공유, `Camera`(즉석 촬영)·`Recorder` 사용, 감정 제안 폴링.
 29b. `frontend/src/components/Camera.tsx` — 여행 중 즉석 카메라 촬영(getUserMedia 라이브→셔터→캔버스 JPEG). **여기서 볼 것:** 후면 카메라(facingMode) 요청, 언마운트 시 트랙 정리, 권한 실패 시 안내.
 30. `frontend/src/screens/AddMoments.tsx` — 여행 중 순간 추가(`/p/:id/add`). **여기서 볼 것:** 기존 순간을 불러와 이어서 담기.

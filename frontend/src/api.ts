@@ -56,12 +56,19 @@ export const addRecipient = (id: string, b: { name: string; address: string; pho
 export const removeRecipient = (rid: string) => req(`/api/v1/recipients/${rid}`, { method: "DELETE" });
 export const patchRecipient = (rid: string, b: { name?: string; address?: string; phone?: string; postal_code?: string; gift_message?: string }) =>
   req(`/api/v1/recipients/${rid}`, { method: "PATCH", body: JSON.stringify(b) });
-export const createOrder = (id: string, spec: object, shipping: object) =>
+// 판형·단가는 서버가 Sweetbook에서 받아 내려준다 — 프론트는 값을 들고 있지 않는다
+export interface BookSpec { name: string; price: number; page_min: number; page_max: number | null; page_increment: number }
+export const getBookSpec = (pages?: number) =>
+  req<BookSpec>(`/api/v1/book-spec${pages ? `?pages=${pages}` : ""}`);
+export const createOrder = (id: string, shipping: object) =>
   req<{ book_uid: string; orders: { to: string; order_uid: string }[] }>(`/api/v1/projects/${id}/order`,
-    { method: "POST", body: JSON.stringify({ spec, shipping }) });
+    { method: "POST", body: JSON.stringify({ shipping }) });
 export const getOrderStatus = (id: string) =>
-  req<{ order_status: string | null; recipients: { name: string; order_status: string | null }[] }>(
+  req<{ order_status: string | null; cancellable: boolean; recipients: { name: string; order_status: string | null }[] }>(
     `/api/v1/projects/${id}/order/status`);
+export const cancelOrder = (id: string, reason: string) =>
+  req<{ ok: boolean; cancelled: number }>(`/api/v1/projects/${id}/order/cancel`,
+    { method: "POST", body: JSON.stringify({ reason }) });
 export interface PublicMoment { id: string; caption: string | null; transcript: string | null;
   emotion: string | null; project_title: string; has_audio: boolean; }
 export const audioUrl = (momentId: string) => `${BASE}/api/v1/moments/${momentId}/audio`;

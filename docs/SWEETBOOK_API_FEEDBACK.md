@@ -70,9 +70,20 @@
 3. **`"ORDERED"`** — 존재하지 않는 상태 문자열을 우리가 지어내 쓰고 있었다.
    응답의 `orderStatus`를 그대로 저장하도록 바꾸고, 프론트 라벨도 실제 enum 11종으로 교체.
 
+## 우리가 쓰는 엔드포인트 (2026-08-06 기준)
+
+| 앱 흐름 | `POST /books` · `/books/{uid}/cover` · `/books/{uid}/contents?breakBefore=page` · `/books/{uid}/finalization` → `POST /orders/estimate`(잔액 사전검증) → `POST /orders` → `GET /orders/{uid}`(웹훅 미등록 구간 폴백) · `POST /orders/{uid}/cancel` · `GET /book-specs/{uid}`(계약 단가) |
+|---|---|
+| 운영 CLI | `GET /credits` · `/credits/transactions` · `POST /credits/sandbox/charge` · `GET /books` · `/book-specs` · `/templates` · `GET·PUT·DELETE /webhooks/config` |
+| 수신 | 웹훅 9종(HMAC 검증) |
+| 안 씀 | PDF 업로드 방식(TEMPLATE로 충분 — 채택하면 표지/내지 조판을 우리가 떠안는다), 부분 취소, `PATCH /orders/{uid}/shipping` |
+
+단가는 캐시하지 않고 `GET /book-specs/{uid}`로 그때그때 받는다 — 실제 계약가는 문서 예시(증가분 500원)와 달리
+**기본 12,600원 + 증가분 280원**이었고, 화면에 박아뒀다면 조용히 틀어졌을 값이다.
+
 ## 다음 할 일
 
-- [ ] 공개 HTTPS 엔드포인트 배포 → `PUT /webhooks/config` 등록 → `SWEETBOOK_WEBHOOK_SECRET` 설정
+- [ ] 공개 HTTPS 엔드포인트 배포 → `python scripts/sweetbook_ops.py webhook register <URL>` → 출력된 `SWEETBOOK_WEBHOOK_SECRET`을 .env에
 - [ ] `POST /webhooks/test`로 수신·서명 검증 실경로 확인
 - [ ] 파트너 포털 주문 화면 캡처를 README에 추가
 

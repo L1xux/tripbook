@@ -68,9 +68,37 @@ class SweetbookClient:
     def finalize(self, book_uid: str) -> dict:
         return self._call("POST", f"/books/{book_uid}/finalization")
 
+    # ── 판형·템플릿 (하드코딩 대신 여기서 받아온다) ──────────────────────────
+    def list_book_specs(self) -> list:
+        return self._call("GET", "/book-specs")
+
+    def get_book_spec(self, book_spec_uid: str) -> dict:
+        """판형 상세 {name, priceBase, pricePerIncrement, pageMin/Max/Increment, booksPerBox…}.
+        accountUid를 안 보내면 우리 계정의 계약 단가가 반영된다."""
+        return self._call("GET", f"/book-specs/{book_spec_uid}")
+
+    def list_templates(self, **params) -> list:
+        # bookSpecUid / templateKind(cover|content|divider|publish) / category / limit·offset
+        return self._call("GET", "/templates", params=params or None)
+
+    # ── 충전금 ───────────────────────────────────────────────────────────
     def get_credits(self) -> dict:
         """충전금 잔액 {accountUid, balance, currency, env}. 주문 전 잔액 안내·운영 점검용."""
         return self._call("GET", "/credits")
+
+    def list_credit_transactions(self) -> list:
+        # 쿼리·페이지네이션 미지원 — 전체를 최근순으로 준다(문서 명시). 자르는 건 호출부 몫.
+        return self._call("GET", "/credits/transactions")
+
+    def charge_sandbox_credits(self, amount: int, memo: str = "") -> dict:
+        """테스트 충전(항상 test 잔액). 운영 스크립트 전용 — 앱 흐름에서 부르지 않는다."""
+        return self._call("POST", "/credits/sandbox/charge", json={"amount": amount, "memo": memo})
+
+    # ── 주문 ─────────────────────────────────────────────────────────────
+    def estimate_order(self, payload: dict) -> dict:
+        """차감 예정액·잔액·충분 여부를 미리 준다 {paidCreditAmount, creditBalance, creditSufficient…}.
+        create_order와 같은 본문을 받으므로 FINALIZED된 bookUid가 있어야 한다."""
+        return self._call("POST", "/orders/estimate", json=payload)
 
     def create_order(self, payload: dict, idempotency_key: str | None = None) -> dict:
         # 같은 키로 재시도하면 Sweetbook이 원 응답을 그대로 돌려준다 — 타임아웃 재시도의 이중 차감을 막는 유일한 수단.
@@ -79,3 +107,25 @@ class SweetbookClient:
 
     def get_order(self, order_uid: str) -> dict:
         return self._call("GET", f"/orders/{order_uid}")
+
+    def list_books(self, **params) -> list:
+        return self._call("GET", "/books", params=params or None)
+
+    def cancel_order(self, order_uid: str, reason: str, idempotency_key: str | None = None) -> dict:
+        """PAID·PDF_READY 상태만 취소 가능하며 배송비 포함 전액이 충전금으로 환불된다.
+        환불 이중 처리를 막기 위해 취소에도 멱등 키를 붙인다."""
+        headers = {"Idempotency-Key": idempotency_key} if idempotency_key else None
+        return self._call("POST", f"/orders/{order_uid}/cancel",
+                          json={"cancelReason": reason}, headers=headers)
+
+    # ── 웹훅 등록 ────────────────────────────────────────────────────────
+    def get_webhook_config(self) -> dict:
+        return self._call("GET", "/webhooks/config")
+
+    def put_webhook_config(self, webhook_url: str, events: list | None = None, description: str = "") -> dict:
+        """수신 URL 등록(HTTPS만). 최초 등록 때만 secretKey 전체값이 1회 내려온다 — 즉시 저장할 것."""
+        body = {"webhookUrl": webhook_url, "events": events, "description": description}
+        return self._call("PUT", "/webhooks/config", json=body)
+
+    def delete_webhook_config(self) -> dict:
+        return self._call("DELETE", "/webhooks/config")

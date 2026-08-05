@@ -2,7 +2,7 @@
  *  누가 호출: screens/Album(status 뷰).
  *  무엇을 호출: api(getOrderStatus). */
 import { useEffect, useState } from "react";
-import { getOrderStatus } from "../api";
+import { getOrderStatus, cancelOrder } from "../api";
 
 // Sweetbook orderStatus enum 전체(docs/operations/order-status) — 서버가 주는 값 그대로 들어온다.
 const LABEL: Record<string, string> = {
@@ -14,7 +14,9 @@ const LABEL: Record<string, string> = {
 const label = (s: string | null) => (s ? LABEL[s] ?? s : "대기 중");
 
 export default function OrderStatus({ projectId }: { projectId: string }) {
-  const [data, setData] = useState<{ order_status: string | null; recipients: { name: string; order_status: string | null }[] } | null>(null);
+  const [data, setData] = useState<{ order_status: string | null; cancellable: boolean; recipients: { name: string; order_status: string | null }[] } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let live = true;
@@ -23,6 +25,17 @@ export default function OrderStatus({ projectId }: { projectId: string }) {
     const t = setInterval(tick, 5000);
     return () => { live = false; clearInterval(t); };
   }, [projectId]);
+
+  // 제작이 시작되기 전(PAID·PDF_READY)까지만 취소할 수 있다 — 가능 여부는 서버가 판단해 내려준다
+  const cancel = async () => {
+    if (!confirm("주문을 취소할까요? 결제한 금액은 전액 환불돼요.")) return;
+    setBusy(true); setError("");
+    try {
+      await cancelOrder(projectId, "사용자 요청");
+      setData(await getOrderStatus(projectId));
+    } catch (e) { setError(e instanceof Error ? e.message : "취소하지 못했어요"); }
+    finally { setBusy(false); }
+  };
 
   if (!data) return <div style={{ padding: 80, textAlign: "center", color: "var(--soft)" }}>여는 중…</div>;
   return (
@@ -36,6 +49,12 @@ export default function OrderStatus({ projectId }: { projectId: string }) {
         ))}
       </div>
       <p className="ship-note" style={{ marginTop: 12 }}>상태는 자동으로 갱신돼요</p>
+      {error && <p className="error-text">{error}</p>}
+      {data.cancellable && (
+        <button className="btn-ghost" style={{ width: "100%", marginTop: 16 }} disabled={busy} onClick={cancel}>
+          {busy ? "취소하는 중…" : "주문 취소하기"}
+        </button>
+      )}
     </div>
   );
 }
