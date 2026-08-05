@@ -7,8 +7,8 @@
 나와 동행자에게 보냅니다. 모바일에서 쓰는 웹 서비스입니다.
 
 > 이 레포는 서비스이자 연동 기록입니다. Book Print API를 외부 파트너 입장에서 처음부터 붙여
-> 실주문까지 완주했고, 그 과정에서 막힌 지점과 개선 제안을 문서로 남겼습니다.
-> → [연동 피드백](docs/SWEETBOOK_API_FEEDBACK.md) · [API 개선 제안](docs/BOOK_PRINT_API_PROPOSAL.md)
+> 실주문까지 완주했고, 그 과정에서 막힌 지점을 문서로 남겼습니다.
+> → [연동 피드백](docs/SWEETBOOK_API_FEEDBACK.md)
 
 ## 시그니처 — "종이책을 펼치면, 그때 내 목소리가 흘러나온다"
 
@@ -116,6 +116,5 @@ python scripts/sweetbook_ops.py webhook register https://…/api/v1/webhooks/swe
 |---|---|
 | [`docs/CODE_TOUR.md`](docs/CODE_TOUR.md) | 처음 보는 사람이 읽는 순서대로 정리한 파일 지도 |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 순간 담기와 목소리 캡션, 주문의 세 가지 요청 여정 |
-| [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md) | 연동하며 겪은 것과 개선 제안 |
-| [`docs/BOOK_PRINT_API_PROPOSAL.md`](docs/BOOK_PRINT_API_PROPOSAL.md) | 파트너 온보딩 관점의 API 개선 제안 |
+| [`docs/SWEETBOOK_API_FEEDBACK.md`](docs/SWEETBOOK_API_FEEDBACK.md) | 연동하며 겪은 것 |
 | [`CLAUDE.md`](CLAUDE.md) | 스택과 테스트 명령, 코드 컨벤션 |
