@@ -1,7 +1,7 @@
 /** 사진을 가득 채운 카드. 탭하면 글귀와 감정, 음성 파형, 필름 스탬프가 올라온다.
  *  목소리가 없는 순간은 카드에서 바로 녹음할 수 있다.
- *  누가 호출: screens/Album의 카드 덱.
- *  무엇을 호출: api의 이미지·음성 함수, components의 AudioWaveform과 Recorder. */
+ *  screens/Album의 카드 덱이 쓴다.
+ *  api의 이미지·음성 함수와 components의 AudioWaveform, Recorder를 쓴다. */
 import { useEffect, useRef, useState } from "react";
 import AudioWaveform from "./AudioWaveform";
 import Recorder from "./Recorder";

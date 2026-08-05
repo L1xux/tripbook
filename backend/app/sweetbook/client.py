@@ -1,4 +1,6 @@
-"""Sweetbook Book Print API HTTP 클라이언트. / renderer와 orders 라우터가 호출. / httpx 사용.
+"""Sweetbook Book Print API를 부르는 HTTP 클라이언트.
+renderer와 orders 라우터, 운영 스크립트가 가져다 쓴다.
+httpx에 기댄다.
 cover와 contents는 이미지 파일을 첨부하는 multipart 방식이다."""
 import json
 import httpx

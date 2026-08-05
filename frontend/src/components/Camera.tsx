@@ -1,6 +1,6 @@
 /** 여행 중 바로 찍는 카메라. 라이브 화면을 띄우고 셔터를 누르면 JPEG 파일로 넘긴다.
- *  누가 호출: components/MomentCapture.
- *  무엇을 호출: navigator.mediaDevices.getUserMedia와 canvas. */
+ *  components/MomentCapture가 쓴다.
+ *  navigator.mediaDevices.getUserMedia와 canvas를 쓴다. */
 import { useEffect, useRef, useState } from "react";
 
 export default function Camera({ onCapture, onClose }: { onCapture: (f: File) => void; onClose: () => void }) {

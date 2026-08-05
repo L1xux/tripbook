@@ -1,4 +1,6 @@
-"""전사한 말을 글귀로 다듬는 파이프라인. / 음성 업로드가 백그라운드로 호출. / stt와 OpenAI를 사용."""
+"""전사한 말을 글귀로 다듬는다.
+음성 업로드가 백그라운드로 부른다.
+stt와 OpenAI를 쓴다."""
 import app.db as db_module
 from app.models import Photo
 from app.ai.stt import transcribe

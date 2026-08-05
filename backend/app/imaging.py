@@ -1,4 +1,6 @@
-"""이미지 리사이즈와 촬영일 추출, 파일 경로 규칙. / photos 라우터와 analysis가 호출. / Pillow 사용."""
+"""이미지를 줄이고 촬영일을 꺼내며 파일 경로 규칙을 정한다.
+photos 라우터와 analysis가 가져다 쓴다.
+Pillow에 기댄다."""
 import os
 from datetime import datetime
 from pathlib import Path

@@ -1,11 +1,12 @@
-"""Sweetbook 운영·점검 CLI(앱 흐름 밖에서 쓰는 것들을 여기로 모았다).
-누가 호출: 사람이 터미널에서. / 무엇을 호출: app.sweetbook.client.
+"""앱 흐름 밖에서 쓰는 Sweetbook 운영·점검 명령을 모아 둔다.
+사람이 터미널에서 직접 실행한다.
+app.sweetbook.client를 쓴다.
 
   python scripts/sweetbook_ops.py credits              충전금 잔액
-  python scripts/sweetbook_ops.py transactions [N]     최근 거래 N건(기본 10)
+  python scripts/sweetbook_ops.py transactions [N]     최근 거래 N건. 기본 10건
   python scripts/sweetbook_ops.py charge 100000        Sandbox 테스트 충전
-  python scripts/sweetbook_ops.py specs                판형 목록(계약 단가 포함)
-  python scripts/sweetbook_ops.py templates [kind]     템플릿 목록(cover|content|…)
+  python scripts/sweetbook_ops.py specs                판형 목록과 계약 단가
+  python scripts/sweetbook_ops.py templates [kind]     템플릿 목록. kind는 cover나 content
   python scripts/sweetbook_ops.py books [N]            최근 만든 책 N권
   python scripts/sweetbook_ops.py order <orderUid>     주문 상세
   python scripts/sweetbook_ops.py cancel <orderUid> [사유]
@@ -25,7 +26,7 @@ from app.sweetbook.client import SweetbookClient, SweetbookError  # noqa: E402
 def _client() -> SweetbookClient:
     s = get_settings()
     if not s.sweetbook_api_key:
-        raise SystemExit("SWEETBOOK_API_KEY가 없습니다 (backend/.env)")
+        raise SystemExit("backend/.env에 SWEETBOOK_API_KEY가 없습니다")
     return SweetbookClient(s.sweetbook_api_key, s.sweetbook_env)
 
 
@@ -49,7 +50,7 @@ def cmd_charge(c, args):
     if not args:
         raise SystemExit("금액을 지정하세요: charge 100000")
     d = c.charge_sandbox_credits(int(args[0]), memo="tripbook ops")
-    print(f"충전 완료 — 잔액 {_won(d['balance'])} ({d['env']})")
+    print(f"충전 완료. 잔액 {_won(d['balance'])}, 환경 {d['env']}")
 
 
 def cmd_specs(c, _):
@@ -94,7 +95,7 @@ def cmd_cancel(c, args):
         raise SystemExit("주문 uid가 필요합니다")
     reason = args[1] if len(args) > 1 else "운영 취소"
     d = c.cancel_order(args[0], reason, idempotency_key=f"ops-cancel-{args[0]}")
-    print(f"취소됨 — {d.get('orderStatus')}  환불 {_won(d.get('refundAmount'))}")
+    print(f"취소됨. 상태 {d.get('orderStatus')}, 환불 {_won(d.get('refundAmount'))}")
 
 
 def cmd_webhook(c, args):
@@ -103,22 +104,23 @@ def cmd_webhook(c, args):
         try:
             d = c.get_webhook_config()
         except SweetbookError as e:
-            print(f"등록된 웹훅이 없습니다 ({e})")
+            print(f"등록된 웹훅이 없습니다. {e}")
             return
         print(f"URL {d.get('webhookUrl')}\n활성 {d.get('isActive')}  이벤트 {d.get('events') or '전체'}\n"
-              f"secretKey {d.get('secretKey')} (앞 8자만 노출됨 — 최초 등록 때만 전체값)")
+              f"secretKey {d.get('secretKey')}\n"
+              "조회할 때는 앞 8자만 보입니다. 전체값은 최초 등록 때만 내려옵니다.")
     elif action == "register":
         if len(args) < 2:
-            raise SystemExit("수신 URL이 필요합니다 (HTTPS만)")
+            raise SystemExit("수신 URL이 필요합니다. HTTPS만 허용됩니다.")
         d = c.put_webhook_config(args[1], description="Tripbook 주문 상태 수신")
         secret = d.get("secretKey", "")
-        print(f"등록 완료 — {d.get('webhookUrl')}")
+        print(f"등록 완료. {d.get('webhookUrl')}")
         print(f"secretKey: {secret}")
         print("\n※ 전체값은 지금 한 번만 보입니다. backend/.env에 아래 줄을 넣고 서버를 재기동하세요:")
         print(f"SWEETBOOK_WEBHOOK_SECRET={secret}")
     elif action == "delete":
         c.delete_webhook_config()
-        print("웹훅 해제 완료 (재등록하면 새 secretKey가 발급됩니다)")
+        print("웹훅을 해제했습니다. 다시 등록하면 새 secretKey가 발급됩니다.")
     else:
         raise SystemExit(f"알 수 없는 동작: {action}")
 

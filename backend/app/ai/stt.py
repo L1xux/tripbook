@@ -1,4 +1,7 @@
-"""음성 전사(OpenAI Whisper). / caption 파이프라인이 호출. / openai SDK 사용.
+"""오디오를 한국어 문장으로 옮긴다.
+caption 파이프라인이 부른다.
+OpenAI Whisper를 쓴다.
+
 무음이나 짧은 오디오에서 Whisper가 없는 문장을 지어내던 문제를 막는다.
 프롬프트 힌트를 주지 않고, 세그먼트 신뢰도로 걸러 진짜 말이 없으면 빈 문자열을 돌려준다."""
 from functools import lru_cache

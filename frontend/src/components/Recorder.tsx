@@ -1,6 +1,6 @@
 /** 목소리 한 마디를 녹음하는 버튼. 누르면 녹음하고 다시 누르면 멈춰 결과를 넘긴다.
- *  누가 호출: MomentCapture와 MomentCard.
- *  무엇을 호출: navigator.mediaDevices와 MediaRecorder. */
+ *  MomentCapture와 MomentCard가 쓴다.
+ *  navigator.mediaDevices와 MediaRecorder를 쓴다. */
 import { useEffect, useRef, useState } from "react";
 
 export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) => void; busy?: boolean }) {

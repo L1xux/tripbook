@@ -1,6 +1,6 @@
 /** 오디오를 Web Audio로 디코드해 실제 진폭 막대를 그리고, 탭하면 재생하며 진행을 보여준다.
- *  누가 호출: MomentCard와 screens/Voice.
- *  무엇을 호출: fetch와 AudioContext.decodeAudioData, audio 엘리먼트. */
+ *  MomentCard와 screens/Voice가 쓴다.
+ *  fetch와 AudioContext.decodeAudioData, audio 엘리먼트를 쓴다. */
 import { useEffect, useRef, useState } from "react";
 
 export default function AudioWaveform({ src, bars = 32, autoplay, withButton }: { src: string; bars?: number; autoplay?: boolean; withButton?: boolean }) {

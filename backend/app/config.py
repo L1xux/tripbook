@@ -1,4 +1,6 @@
-"""앱 전역 설정. / main.py와 외부 클라이언트 모듈이 호출. / .env 파일을 읽는다."""
+"""앱 전역 설정을 담는다.
+main.py와 외부 클라이언트 모듈이 가져다 쓴다.
+.env 파일에서 값을 읽는다."""
 from functools import lru_cache
 from pydantic_settings import BaseSettings
 

@@ -1,4 +1,6 @@
-"""사진을 보고 감정 후보를 고른다. / photos 라우터가 백그라운드로 호출. / OpenAI 비전을 사용."""
+"""사진을 보고 감정 후보를 고른다.
+photos 라우터가 사진을 올린 뒤 백그라운드로 부른다.
+OpenAI 비전 모델을 쓴다."""
 import base64
 import json
 from concurrent.futures import ThreadPoolExecutor

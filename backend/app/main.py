@@ -1,4 +1,6 @@
-"""FastAPI 앱 조립. / uvicorn이 호출. / 라우터 등록과 DB 초기화를 부른다."""
+"""FastAPI 앱을 조립한다.
+uvicorn이 이 모듈의 app을 띄운다.
+라우터를 등록하고 DB를 초기화한다."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import init_db

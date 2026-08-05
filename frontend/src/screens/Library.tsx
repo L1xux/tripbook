@@ -1,6 +1,6 @@
 /** 홈 서재. 이 기기에서 만든 여행을 책장에 진열하고, 탭하면 그 여행이 열린다.
- *  누가 호출: App 라우터의 루트 경로.
- *  무엇을 호출: lib/library의 목록과 api의 getProject. */
+ *  App 라우터의 루트 경로에서 열린다.
+ *  lib/library의 목록과 api의 getProject를 쓴다. */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listTrips, removeTrip } from "../lib/library";

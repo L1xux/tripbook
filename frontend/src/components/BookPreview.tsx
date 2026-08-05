@@ -1,6 +1,6 @@
 /** 책 펼침면 미리보기. 왼쪽에 사진, 오른쪽에 명조 글귀를 놓아 인쇄될 모습을 그대로 보여준다.
- *  누가 호출: screens/Album의 책 화면.
- *  무엇을 호출: api의 photoImageUrl. */
+ *  screens/Album의 책 화면이 쓴다.
+ *  api의 photoImageUrl을 부른다. */
 import { photoImageUrl, type Project } from "../api";
 
 export default function BookPreview({ project, onOrder }: { project: Project; onOrder: () => void }) {

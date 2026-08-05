@@ -1,4 +1,6 @@
-"""DB 엔진과 세션 관리. / 라우터가 get_db로 호출. / SQLite 파일을 연다."""
+"""DB 엔진과 세션을 관리한다.
+라우터가 get_db로, 백그라운드 잡이 session_scope로 가져다 쓴다.
+SQLite 파일을 연다."""
 import os
 from contextlib import contextmanager
 from fastapi import HTTPException

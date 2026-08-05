@@ -1,4 +1,6 @@
-"""사진과 음성 업로드, 수정, 정렬 라우터. / main.py가 등록. / imaging과 ai 모듈을 호출."""
+"""사진과 음성을 올리고 순간을 고치거나 정렬한다.
+main.py가 라우터로 등록한다.
+imaging과 ai 모듈을 부른다."""
 import os
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile, HTTPException

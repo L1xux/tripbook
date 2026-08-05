@@ -1,4 +1,6 @@
-"""책 조립 렌더러. / orders 라우터가 호출. / SweetbookClient를 부른다.
+"""순간들을 한 권의 책으로 조립한다.
+orders 라우터가 주문할 때 부른다.
+SweetbookClient를 쓴다.
 create에서 title이 필수이고, cover와 contents는 multipart로 사진을 올린다.
 BookRenderer 뒤에 두어 나중에 PDF 방식 렌더러로 갈아끼울 수 있게 했다."""
 import io

@@ -1,4 +1,6 @@
-"""DB 테이블 정의. 여행과 순간, 수령인. / 라우터와 AI 파이프라인이 호출. / db.Base를 사용."""
+"""여행과 순간, 수령인 테이블을 정의한다.
+라우터와 AI 파이프라인이 가져다 쓴다.
+db.Base 위에 얹는다."""
 import uuid
 from datetime import datetime
 from sqlalchemy import String, Integer, Text, ForeignKey, DateTime

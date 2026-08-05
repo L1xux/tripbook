@@ -1,4 +1,6 @@
-"""요청과 응답 스키마. / 라우터가 호출. / models의 필드와 대응한다."""
+"""요청과 응답의 모양을 정의한다.
+라우터가 가져다 쓴다.
+models의 필드와 짝을 이룬다."""
 from pydantic import BaseModel
 
 

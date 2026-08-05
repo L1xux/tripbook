@@ -1,6 +1,6 @@
 /** 내 책과 수령인별 인쇄·배송 상태를 폴링해 보여주고, 제작 전이면 취소할 수 있다.
- *  누가 호출: screens/Album의 주문 현황 화면.
- *  무엇을 호출: api의 getOrderStatus와 cancelOrder. */
+ *  screens/Album의 주문 현황 화면이 쓴다.
+ *  api의 getOrderStatus와 cancelOrder를 부른다. */
 import { useEffect, useState } from "react";
 import { getOrderStatus, cancelOrder } from "../api";
 

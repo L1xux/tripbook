@@ -1,4 +1,6 @@
-"""여행 생성과 조회, 삭제 라우터. / main.py가 등록. / models와 schemas를 사용."""
+"""여행을 만들고 조회하고 지운다.
+main.py가 라우터로 등록한다.
+models와 schemas, 감정 아크 모듈을 쓴다."""
 import os
 import shutil
 from fastapi import APIRouter, Depends

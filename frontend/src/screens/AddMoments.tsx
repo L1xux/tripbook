@@ -1,6 +1,6 @@
 /** 여행 중 순간 담기. 이미 만든 여행에 사진과 녹음, 감정을 이어서 추가한다.
- *  누가 호출: App 라우터의 /p/:id/add.
- *  무엇을 호출: api의 getProject와 components/MomentCapture. */
+ *  App 라우터의 /p/:id/add에서 열린다.
+ *  api의 getProject와 components/MomentCapture를 쓴다. */
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProject, type Project } from "../api";

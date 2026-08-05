@@ -1,6 +1,6 @@
 /** 앨범. 카드 덱과 전체 그리드를 오가고, 덱 끝에서 책 만들기로 이어진다.
- *  누가 호출: App 라우터의 /p/:id.
- *  무엇을 호출: api의 getProject와 generateArc, components의 MomentCard와 BookPreview. */
+ *  App 라우터의 /p/:id에서 열린다.
+ *  api의 getProject와 generateArc, components의 MomentCard와 BookPreview를 쓴다. */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProject, generateArc, reorderMoments, photoImageUrl, type Project } from "../api";

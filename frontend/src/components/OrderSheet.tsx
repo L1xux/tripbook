@@ -1,6 +1,6 @@
 /** 내 배송지를 받고, 원하면 동행자에게 보낼 한 권을 더해 주문한다.
- *  누가 호출: screens/Album의 주문 화면.
- *  무엇을 호출: api의 getBookSpec과 수령인 관련 함수, createOrder. */
+ *  screens/Album의 주문 화면이 쓴다.
+ *  api의 getBookSpec과 수령인 관련 함수, createOrder를 부른다. */
 import { useEffect, useRef, useState } from "react";
 import { addRecipient, removeRecipient, patchRecipient, createOrder, getBookSpec, type BookSpec, type Project } from "../api";
 

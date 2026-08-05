@@ -1,4 +1,6 @@
-"""판형·수령인·주문·웹훅 라우터. / main.py가 등록. / sweetbook 모듈 호출."""
+"""판형 조회와 수령인 관리, 주문과 취소, 웹훅 수신을 맡는다.
+main.py가 라우터로 등록한다.
+sweetbook 모듈을 부른다."""
 import hashlib
 import hmac
 import json

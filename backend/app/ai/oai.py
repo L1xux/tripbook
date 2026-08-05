@@ -1,4 +1,6 @@
-"""OpenAI 클라이언트와 모델 상수. / caption, analysis, arc가 호출. / config에서 키를 읽는다.
+"""OpenAI 클라이언트와 모델 상수를 둔다.
+caption과 analysis, arc가 가져다 쓴다.
+config에서 키를 읽는다.
 캡션 편집과 감정 제안, 감정 아크를 모두 gpt-4o-mini로 처리한다."""
 from functools import lru_cache
 from openai import OpenAI

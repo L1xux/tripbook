@@ -1,6 +1,6 @@
 /** 사진을 담고 순간마다 목소리를 녹음해 글귀를 만들고 감정을 고른다. 새 여행과 기존 여행이 함께 쓴다.
- *  누가 호출: screens의 NewTrip과 AddMoments.
- *  무엇을 호출: api의 업로드와 조회 함수, components의 Recorder와 Camera. */
+ *  screens의 NewTrip과 AddMoments가 함께 쓴다.
+ *  api의 업로드·조회 함수와 components의 Recorder, Camera를 쓴다. */
 import { useEffect, useRef, useState } from "react";
 import { uploadPhotos, uploadAudio, patchMoment, deleteMoment, getAnalysis, photoImageUrl, type Moment } from "../api";
 import Recorder from "./Recorder";

@@ -1,4 +1,6 @@
-"""여행 감정 요약. / projects 라우터가 호출. / OpenAI 사용.
+"""여행 전체의 감정 흐름을 짧게 요약한다.
+projects 라우터가 부른다.
+OpenAI를 쓴다.
 사용자가 남긴 글귀만으로 여행 전체의 감정 흐름을 짧게 요약한다."""
 from app.ai.oai import CHAT_MODEL, get_oai_client
 
