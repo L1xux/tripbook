@@ -38,7 +38,7 @@ export default function Recorder({ onRecorded, busy }: { onRecorded: (b: Blob) =
   };
   const stop = () => { mr.current?.stop(); setRec(false); if (timer.current) clearInterval(timer.current); };
 
-  // 글귀로 옮기는 동안에는 다시 녹음하지 못하게 막는다. 반복 녹음이 무음 전사를 부르던 원인이다.
+  // 글귀로 옮기는 동안에는 다시 녹음하지 못하게 막는다. 반복 녹음이 무음 인식을 부르던 원인이다.
   return (
     <>
       <button type="button" className={rec ? "rec on" : "rec"} disabled={!!busy && !rec}

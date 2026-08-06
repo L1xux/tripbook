@@ -1,4 +1,4 @@
-"""전사한 말을 글귀로 다듬는다.
+"""받아쓴 말을 캡션으로 다듬는다.
 음성 업로드가 백그라운드로 부른다.
 stt와 OpenAI를 쓴다."""
 import app.db as db_module
@@ -42,10 +42,10 @@ def transcribe_and_caption(photo_id: str) -> None:
                 db.commit()
                 return
             try:
-                # 편집이 빈 문자열을 돌려줘도 침묵하지 않고 전사 원문을 남긴다
+                # 편집이 빈 문자열을 돌려줘도 침묵하지 않고 받아쓴 원문을 남긴다
                 photo.caption = polish_caption(photo.transcript) or photo.transcript
             except Exception:
-                # 정리에 실패해도 전사 원문은 남긴다
+                # 정리에 실패해도 받아쓴 원문은 남긴다
                 photo.caption = photo.transcript
             photo.analysis_status = "done"
         except Exception:

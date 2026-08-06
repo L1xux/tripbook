@@ -27,7 +27,7 @@ def test_transcribe_and_caption_saves(client, monkeypatch):
 
 
 def test_empty_transcript_never_invents_caption(client, monkeypatch):
-    """전사가 비면(무음 등) 캡션을 지어내지 않는다 — polish도 호출하지 않는다(창작 금지)."""
+    """받아쓴 말이 비면(무음 등) 캡션을 지어내지 않는다 — polish도 호출하지 않는다(창작 금지)."""
     import app.ai.caption as caption
     import app.db as db_module
     from app.models import Project, Photo
@@ -46,7 +46,7 @@ def test_empty_transcript_never_invents_caption(client, monkeypatch):
 
 
 def test_empty_polish_falls_back_to_transcript(client, monkeypatch):
-    """편집 LLM이 빈 문자열을 돌려줘도 침묵하지 않는다 — 전사 원문을 캡션으로 보존."""
+    """편집 LLM이 빈 문자열을 돌려줘도 침묵하지 않는다 — 받아쓴 원문을 캡션으로 보존."""
     import app.ai.caption as caption
     import app.db as db_module
     from app.models import Project, Photo
@@ -75,5 +75,5 @@ def test_pipeline_failure_keeps_transcript_as_caption(client, monkeypatch):
     monkeypatch.setattr(caption, "polish_caption", boom)
     caption.transcribe_and_caption(m.id)
     db.refresh(m)
-    # 정리 실패해도 전사 원문을 캡션으로 보존한다(보존 우선)
+    # 정리 실패해도 받아쓴 원문을 캡션으로 보존한다(보존 우선)
     assert m.caption == "바다가 파랬어"
