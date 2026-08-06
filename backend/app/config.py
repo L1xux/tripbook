@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     sweetbook_book_spec_uid: str = "SQUAREBOOK_HC"        # 고화질 스퀘어북 하드커버
     sweetbook_cover_template_uid: str = "79yjMH3qRPly"    # 일기장A 표지. taupe 명조로 우리 디자인과 맞는다
     sweetbook_content_template_uid: str = "2mi1ao0Z4Vxl"  # 공용 빈내지
+    # 배포한 프론트 주소를 쉼표로 나열한다. 비어 있으면 로컬 개발로 보고 전부 허용한다.
+    cors_origins: str = ""
     data_dir: str = "data"
     database_url: str = "sqlite:///data/tripbook.db"
     public_web_base: str = "http://localhost:5173"  # 인쇄 QR이 가리킬 공개 웹 주소

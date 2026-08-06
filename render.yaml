@@ -1,0 +1,19 @@
+# Render 정적 사이트 배포 설정.
+# 대시보드에서 손으로 만들지 않고 이 파일로 관리한다.
+# VITE_API_BASE는 백엔드 터널 주소이며 sync: false라 대시보드에서 직접 넣는다.
+services:
+  - type: web
+    runtime: static
+    name: tripbook
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE
+        sync: false
+    routes:
+      # 이 앱은 /p/:id 와 /v/:id 같은 주소를 쓴다.
+      # 이 규칙이 없으면 인쇄된 QR을 스캔했을 때 그 경로의 파일을 찾다가 404가 난다.
+      - type: rewrite
+        source: /*
+        destination: /index.html
