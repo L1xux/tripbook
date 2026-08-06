@@ -14,7 +14,7 @@ export default function MomentCard({ m, projectId, stamp, onUpdate }:
   const timers = useRef<number[]>([]);
   useEffect(() => () => { timers.current.forEach(clearInterval); }, []);
 
-  // 카드에서 바로 목소리를 담는다. 올리면 파형이 뜨고 음성 인식이 끝나면 캡션이 채워진다.
+  // 카드에서 바로 목소리를 담는다. 올리면 파형이 뜨고 전사가 끝나면 캡션이 채워진다.
   const onAudio = async (blob: Blob) => {
     setBusy(true);
     try { await uploadAudio(m.id, blob); }

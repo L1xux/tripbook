@@ -49,7 +49,7 @@
     <line x1="398" y1="220" x2="398" y2="296" stroke="#E4531F" stroke-width="1.5" marker-end="url(#s)"/>
     <rect x="280" y="300" width="236" height="90" rx="14" fill="#FBE9E0" stroke="#F0CDBB" stroke-width="1.5"/>
     <text x="298" y="327" font-size="14" font-weight="700" fill="#191610">말한 그대로 글귀가 된다</text>
-    <text x="298" y="348" font-size="11.5" fill="#8C8578">Whisper가 글로 옮긴 뒤 말투를 살려 다듬는다</text>
+    <text x="298" y="348" font-size="11.5" fill="#8C8578">Whisper 전사 뒤 말투를 살려 다듬는다</text>
     <text x="298" y="367" font-size="11.5" fill="#8C8578">없는 말은 쓰지 않는다</text>
 
     <line x1="875" y1="220" x2="875" y2="296" stroke="#E4531F" stroke-width="1.5" marker-end="url(#s)"/>

@@ -41,8 +41,8 @@ class Photo(Base):
     emotion: Mapped[str | None] = mapped_column(String, nullable=True)  # 사용자가 고른 감정 태그
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     audio_path: Mapped[str | None] = mapped_column(String, nullable=True)  # 원본 음성
-    transcript: Mapped[str | None] = mapped_column(Text, nullable=True)  # Whisper가 옮긴 원문
-    caption: Mapped[str | None] = mapped_column(Text, nullable=True)  # 옮긴 말을 다듬은 캡션. 사용자가 고칠 수 있다
+    transcript: Mapped[str | None] = mapped_column(Text, nullable=True)  # Whisper 전사 원문
+    caption: Mapped[str | None] = mapped_column(Text, nullable=True)  # 전사를 다듬은 캡션. 사용자가 고칠 수 있다
     ai_scene_description: Mapped[str | None] = mapped_column(Text, nullable=True)  # 감정 제안의 근거. 화면에는 쓰지 않는다
     suggested_emotion: Mapped[str | None] = mapped_column(String, nullable=True)  # AI가 제안한 감정
     analysis_status: Mapped[str] = mapped_column(String, default="pending")
