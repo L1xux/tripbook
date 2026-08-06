@@ -33,20 +33,13 @@
 
 ## 기술 스택
 
-**Frontend**
-React 19 · TypeScript · Vite · react-router-dom · vitest
-
-**Backend**
-Python 3.11 · FastAPI · SQLAlchemy 2.0 · SQLite · BackgroundTasks · pytest
-
-**AI**
-OpenAI Whisper `whisper-1` 음성 전사 · gpt-4o-mini 글귀 편집과 사진 감정 제안
-
-**외부 연동**
-Sweetbook Book Print API 인쇄와 배송 · 웹훅 HMAC-SHA256 서명 검증
-
-**그 외**
-httpx 외부 호출 · Pillow 이미지 리사이즈 · qrcode 인쇄면 QR 합성
+| 영역 | 기술 |
+|---|---|
+| **Frontend** | React 19 · TypeScript · Vite · react-router-dom · vitest |
+| **Backend** | Python 3.11 · FastAPI · SQLAlchemy 2.0 · SQLite · BackgroundTasks · pytest |
+| **AI** | OpenAI Whisper `whisper-1` 음성 전사 · gpt-4o-mini 글귀 편집과 사진 감정 제안 |
+| **외부 연동** | Sweetbook Book Print API 인쇄와 배송 · 웹훅 HMAC-SHA256 서명 검증 |
+| **그 외** | httpx 외부 호출 · Pillow 이미지 리사이즈 · qrcode 인쇄면 QR 합성 |
 
 ## 무엇을 다뤘나
 
