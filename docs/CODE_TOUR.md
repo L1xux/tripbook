@@ -8,7 +8,7 @@
 1. `backend/app/main.py` — 앱 조립(엔트리포인트). 여기서 시작하세요. **여기서 볼 것:** `create_app()`이 등록하는 라우터 목록 = 기능 지도.
 2. `backend/app/config.py` — `.env` 설정 로딩(`get_settings()`). **여기서 볼 것:** `OPENAI_API_KEY`(캡션/감정 제안 + Whisper 음성 인식), SWEETBOOK 키, `SWEETBOOK_WEBHOOK_SECRET`(웹훅 서명 검증 — 비어 있으면 검증 생략), `PUBLIC_WEB_BASE`(인쇄 QR 목적지)가 어디서 오는지.
 3. `backend/app/db.py` — DB 엔진/세션(`Base`, `SessionLocal`, `get_db`, `session_scope`). **여기서 볼 것:** `check_same_thread=False`인 이유(백그라운드 태스크), 요청 밖 잡이 쓰는 `session_scope`.
-4. `backend/app/models.py` — DB 테이블(Project/Photo=순간/Recipient). **여기서 볼 것:** Photo가 사진과 음성, 인식된 원문, 캡션, 감정을 한 행에 묶는 구조, status/analysis_status 상태 문자열, `has_audio` 프로퍼티, `emotion_arc`.
+4. `backend/app/models.py` — DB 테이블(Project/Photo=순간/Recipient). **여기서 볼 것:** Photo가 사진과 음성, 옮긴 원문, 캡션, 감정을 한 행에 묶는 구조, status/analysis_status 상태 문자열, `has_audio` 프로퍼티, `emotion_arc`.
 5. `backend/app/schemas.py` — 요청/응답 Pydantic 스키마. **여기서 볼 것:** `MomentOut`(caption/transcript/suggested_emotion 포함), `ProjectOut`이 photos/recipients를 함께 내려주는 구조. (`PhotoOut = MomentOut`은 구 라우터 호환용 별칭.)
 
 ## API 라우터 (요청 진입점)
@@ -22,7 +22,7 @@
 9. `backend/app/ai/oai.py` — OpenAI 클라이언트 팩토리+모델 상수. **여기서 볼 것:** `CHAT_MODEL="gpt-4o-mini"`(캡션·감정·아크 공용), lru_cache로 커넥션 재사용.
 10. `backend/app/ai/analysis.py` — 사진 비전 분석(gpt-4o-mini, `response_format` json_schema strict)으로 감정 제안. **여기서 볼 것:** 리사이즈본(_small.jpg) 사용, `analyze_batch`가 스레드풀로 병렬화하는 이유(BackgroundTasks 직렬 실행 회피).
 11. `backend/app/ai/stt.py` — 음성 인식(OpenAI Whisper `whisper-1`, `language="ko"`). **여기서 볼 것:** `get_stt_client`가 monkeypatch 대상(테스트에서 교체).
-12. `backend/app/ai/caption.py` — 인식된 말을 충실하게 캡션으로 편집(gpt-4o-mini). **여기서 볼 것:** `NO_INVENTION` 불변식(원문에 없는 사실·감정 추가 금지), 편집 실패 시 인식된 원문을 캡션으로 보존하는 폴백.
+12. `backend/app/ai/caption.py` — 옮긴 말을 충실하게 캡션으로 편집(gpt-4o-mini). **여기서 볼 것:** `NO_INVENTION` 불변식(원문에 없는 사실·감정 추가 금지), 편집 실패 시 옮긴 원문을 캡션으로 보존하는 폴백.
 12b. `backend/app/ai/arc.py` — 여행 감정 아크 요약(gpt-4o-mini). **여기서 볼 것:** 캡션 있는 순간만 요약, 글귀 없으면 None(지어내지 않음).
 13. `backend/app/imaging.py` — 이미지 리사이즈+EXIF 촬영일 추출. **여기서 볼 것:** MAX_EDGE=1100 선택 이유(비전 토큰 절감).
 

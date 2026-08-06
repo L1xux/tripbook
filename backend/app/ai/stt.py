@@ -30,7 +30,7 @@ def _seg_text(seg) -> str:
 
 
 def transcribe(audio_path: str) -> str:
-    """오디오를 한국어로 받아쓴다. 실제 말이 안 잡히면 지어내지 않고 빈 문자열을 돌려준다.
+    """오디오를 한국어 문장으로 옮긴다. 실제 말이 안 잡히면 지어내지 않고 빈 문자열을 돌려준다.
     프롬프트 힌트는 일부러 주지 않는다. 무음에서 없는 문장을 만들어내는 원인이었다."""
     with open(audio_path, "rb") as f:
         res = get_stt_client().audio.transcriptions.create(
